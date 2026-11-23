@@ -201,48 +201,77 @@ jobs:
       - name: Install workload iOS
         run: dotnet workload install ios
 
-      - name: Selecionar Xcode compatível com workload iOS
+      - name: Selecionar Xcode real (sem symlink) compatível com workload iOS
         run: |
-          ls -d /Applications/Xcode*.app || true
+          ls -lad /Applications/*Xcode* || true
           SDK_XML=$(find /usr/local/share/dotnet "$HOME/.dotnet" -name "SdkVersions.xml" 2>/dev/null | grep -i "iOS" | head -n 1 || true)
+          TARGET_APP=""
           if [ -n "$SDK_XML" ]; then
-            REQ=$(sed -n 's/.*Xcode="\([0-9.]*\)".*/\1/p' "$SDK_XML" | head -n 1)
-            if [ -z "$REQ" ]; then
-              REQ=$(sed -n 's/.*<Xcode>\([0-9.]*\)<\/Xcode>.*/\1/p' "$SDK_XML" | head -n 1)
+            REQ=$(python3 -c 'import re,sys; t=open(sys.argv[1]).read(); m=re.search(r"Xcode[>=<\x22\s]*([0-9]+\.[0-9]+)", t); print(m.group(1) if m else "")' "$SDK_XML")
+            echo "Workload iOS ($SDK_XML) solicita Xcode: $REQ"
+            if [ -n "$REQ" ]; then
+              for cand in /Applications/Xcode_"${REQ}"*.app; do
+                if [ -e "$cand" ]; then
+                  TARGET_APP=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$cand")
+                fi
+              done
             fi
-            echo "Workload SdkVersions.xml ($SDK_XML) solicita Xcode: $REQ"
-            if [ -n "$REQ" ] && ls -d "/Applications/Xcode_${REQ}"*.app >/dev/null 2>&1; then
-              MATCH=$(ls -d "/Applications/Xcode_${REQ}"*.app | sort -V | tail -n 1)
-              sudo xcode-select -s "$MATCH"
-            else
-              LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1 || true)
-              if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST"; fi
+          fi
+          if [ -z "$TARGET_APP" ]; then
+            LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1 || true)
+            if [ -n "$LATEST" ]; then
+              TARGET_APP=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$LATEST")
             fi
+          fi
+          if [ -n "$TARGET_APP" ] && [ -d "$TARGET_APP/Contents/Developer" ]; then
+            echo "Selecionando diretório real do Xcode: $TARGET_APP/Contents/Developer"
+            sudo xcode-select -s "$TARGET_APP/Contents/Developer"
           fi
           xcode-select -p
           xcodebuild -version
+          if ! xcodebuild -showsdks | grep -qi iphoneos; then
+            echo "Baixando plataforma iOS para o Xcode selecionado..."
+            xcodebuild -downloadPlatform iOS
+          fi
 
       - name: Build iOS (.app arm64)
         run: |
           set -o pipefail
-          dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj \
-            -c Release -f net10.0-ios -r ios-arm64 \
-            -p:EnableCodeSigning=false 2>&1 | tee ios_build.log || {
-              REQ_XC=$(sed -n 's/.*requires Xcode \([0-9.]*\).*/\1/p' ios_build.log | head -n 1)
-              if [ -n "$REQ_XC" ] && ls -d "/Applications/Xcode_${REQ_XC}"*.app >/dev/null 2>&1; then
-                MATCH=$(ls -d "/Applications/Xcode_${REQ_XC}"*.app | sort -V | tail -n 1)
-                echo "Re-selecionando Xcode exato exigido: $MATCH"
-                sudo xcode-select -s "$MATCH"
-                dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj \
-                  -c Release -f net10.0-ios -r ios-arm64 \
-                  -p:EnableCodeSigning=false
-              else
-                grep -iE "error" ios_build.log | head -n 15 | while IFS= read -r line; do
+          build_ios() {
+            dotnet build games/AstronGame/iOS/AstronGame.iOS.csproj \
+              -c Release -f net10.0-ios -r ios-arm64 \
+              -p:EnableCodeSigning=false \
+              -p:CodesignKey="" \
+              -p:CodesignProvision="" \
+              -p:CodesignEntitlements=""
+          }
+          build_ios 2>&1 | tee ios_build.log || {
+            REQ_XC=$(python3 -c 'import re; t=open("ios_build.log").read(); m=re.search(r"requires Xcode ([0-9]+\.[0-9]+)", t); print(m.group(1) if m else "")')
+            if [ -n "$REQ_XC" ]; then
+              for cand in /Applications/Xcode_"${REQ_XC}"*.app; do
+                if [ -e "$cand" ]; then
+                  REAL_XC=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$cand")
+                  echo "Re-selecionando Xcode real exigido: $REAL_XC/Contents/Developer"
+                  sudo xcode-select -s "$REAL_XC/Contents/Developer"
+                  break
+                fi
+              done
+              if ! xcodebuild -showsdks | grep -qi iphoneos; then
+                xcodebuild -downloadPlatform iOS
+              fi
+              build_ios 2>&1 | tee ios_build_retry.log || {
+                grep -iE "error" ios_build_retry.log | head -n 15 | while IFS= read -r line; do
                   echo "::error::$line"
                 done
                 exit 1
-              fi
-            }
+              }
+            else
+              grep -iE "error" ios_build.log | head -n 15 | while IFS= read -r line; do
+                echo "::error::$line"
+              done
+              exit 1
+            fi
+          }
 
       - name: Empacotar IPA (Payload/*.app)
         run: |
