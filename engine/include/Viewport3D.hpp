@@ -49,10 +49,10 @@ public:
     bool showGizmo = true;
     bool wireframe = false;
 
-    float yawDeg = -42.0f;
-    float pitchDeg = 22.0f;
-    float distance = 9.5f;
-    AstronVec3 target = { 0.0f, 0.4f, 0.0f };
+    float yawDeg = 26.0f;
+    float pitchDeg = 18.0f;
+    float distance = 8.2f;
+    AstronVec3 target = { 0.0f, 0.25f, 0.0f };
 
 private:
     void ensureFramebuffer(int w, int h);

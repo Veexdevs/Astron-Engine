@@ -223,8 +223,8 @@ namespace AstronEngine.iOSApp
         {
             float h = (float)Bounds.Height;
             if (h <= 1f) return 1.0f;
-            float targetH = 600f;
-            return h < targetH ? (h / targetH) : 1.0f;
+            float targetH = 720f;
+            return Math.Max(0.35f, h / targetH);
         }
 
         private void OnTick(NSTimer timer)

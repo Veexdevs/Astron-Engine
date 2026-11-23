@@ -48,8 +48,8 @@ namespace Astron.Engine.Mobile
             {
                 Id = "projeto-rp",
                 Name = "Projeto RP",
-                CreatedDate = "21/11/2026",
-                LastModified = "21/11/2026 • 19:10",
+                CreatedDate = "18/11/2026",
+                LastModified = "18/11/2026 • 19:10",
                 ThumbAsset = "thumb-city.jpg",
                 DirectoryPath = Path.Combine(_baseDir, "ProjetoRP")
             });
@@ -57,8 +57,8 @@ namespace Astron.Engine.Mobile
             {
                 Id = "obby-teste",
                 Name = "Obby Teste",
-                CreatedDate = "20/11/2026",
-                LastModified = "20/11/2026 • 11:05",
+                CreatedDate = "12/11/2026",
+                LastModified = "12/11/2026 • 11:05",
                 ThumbAsset = "thumb-obby.jpg",
                 DirectoryPath = Path.Combine(_baseDir, "ObbyTeste")
             });
@@ -151,9 +151,19 @@ namespace Astron.Engine.Mobile
 
         private static void SeedProject(string dir, string title, string tpl)
         {
+            Directory.CreateDirectory(Path.Combine(dir, "models"));
+            Directory.CreateDirectory(Path.Combine(dir, "textures"));
             Directory.CreateDirectory(Path.Combine(dir, "scripts"));
-            Directory.CreateDirectory(Path.Combine(dir, "shaders"));
             Directory.CreateDirectory(Path.Combine(dir, "sounds"));
+            Directory.CreateDirectory(Path.Combine(dir, "ui"));
+            Directory.CreateDirectory(Path.Combine(dir, "shaders"));
+
+            string defaultScene = Path.Combine(dir, "default.scene");
+            if (!File.Exists(defaultScene))
+            {
+                File.WriteAllText(defaultScene,
+                    "{\n  \"name\": \"Cena Principal\",\n  \"objects\": [\n    { \"name\": \"Model\", \"mesh\": \"Cube\", \"color\": \"#FFFFFF\", \"material\": \"Plastic\" }\n  ]\n}\n");
+            }
 
             string mainCs = Path.Combine(dir, "main.cs");
             if (!File.Exists(mainCs))
