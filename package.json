@@ -1,0 +1,27 @@
+{
+  "name": "astron-engine",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Astron Engine — engine de criação de jogos com Agente IA (C# / .NET)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "smoke": "node scripts/ssr-smoke.mjs",
+    "test:agent": "node scripts/agent-test.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.0",
+    "@fontsource/michroma": "^5.1.0",
+    "lucide-react": "^0.469.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7"
+  }
+}
