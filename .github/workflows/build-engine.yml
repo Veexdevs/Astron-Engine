@@ -34,6 +34,11 @@ jobs:
 
       - name: Compilar & Testar Empacotador Binário Rust (astron-pak)
         run: |
+          if ! cargo --version >/dev/null 2>&1; then
+            rustup toolchain install stable --profile minimal --no-self-update
+            rustup default stable
+          fi
+          cargo --version
           cargo test --manifest-path engine/tools/astron_pak_rs/Cargo.toml
           cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
 
