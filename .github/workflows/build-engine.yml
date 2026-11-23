@@ -1,0 +1,86 @@
+# ============================================================
+# Astron Engine — Native Desktop Engine Build (C++20 / C11 / GLSL)
+# Compila o editor nativo AstronEngine (.exe Windows + binário Linux x64)
+# ============================================================
+name: 🪐 Build Astron Engine (C++ / C / GLSL)
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------- Linux x64 Native Engine ----------------
+  engine-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências nativas OpenGL / X11 / libcurl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libgl1-mesa-dev libx11-dev libxrandr-dev \
+            libxinerama-dev libxcursor-dev libxi-dev \
+            libcurl4-openssl-dev
+
+      - name: Configurar CMake (Release)
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compilar AstronEngine + Testes Nativos
+        run: cmake --build build --parallel
+
+      - name: Executar Testes Nativos C++20 / C11
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Empacotar AstronEngine Linux x64
+        run: |
+          mkdir -p dist-linux/AstronEngine
+          cp build/AstronEngine dist-linux/AstronEngine/
+          cp -r assets shaders games dist-linux/AstronEngine/
+          chmod +x dist-linux/AstronEngine/AstronEngine
+          tar -czf AstronEngine-linux-x64.tar.gz -C dist-linux AstronEngine
+
+      - name: Upload AstronEngine Linux x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronEngine-linux-x64
+          path: AstronEngine-linux-x64.tar.gz
+          if-no-files-found: error
+
+  # ---------------- Windows x64 Native Engine (.exe) ----------------
+  engine-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar CMake (MSVC x64)
+        run: cmake -B build -A x64
+
+      - name: Compilar AstronEngine.exe (Release)
+        run: cmake --build build --config Release --parallel
+
+      - name: Executar Testes Nativos C++20 / C11
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Empacotar AstronEngine Windows x64
+        shell: bash
+        run: |
+          mkdir -p dist-win/AstronEngine
+          cp build/Release/AstronEngine.exe dist-win/AstronEngine/
+          cp -r assets shaders games dist-win/AstronEngine/
+
+      - name: Upload AstronEngine Windows (.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronEngine-windows-x64
+          path: dist-win/AstronEngine/
+          if-no-files-found: error

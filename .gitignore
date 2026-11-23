@@ -1,20 +1,30 @@
-node_modules/
-dist/
-*.local
-.DS_Store
-.idea/
-.vscode/
+# CMake / C++ / C native build outputs
+build/
+cmake-build-*/
+dist-linux/
+dist-win/
+out/
+exports/
+projects/
+astron_settings.json
 
-# Builds do jogo (.NET)
+# .NET / C# game build outputs
 games/**/bin/
 games/**/obj/
 *.keystore
 *.jks
-out/
 
-# Artefatos de build
+# Binary artifacts
 *.apk
 *.aab
 *.ipa
 *.exe
-!games/**/*.exe
+*.o
+*.obj
+*.pdb
+
+# OS / IDE
+*.local
+.DS_Store
+.idea/
+.vscode/
