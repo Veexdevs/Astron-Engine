@@ -1,0 +1,20 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+.idea/
+.vscode/
+
+# Builds do jogo (.NET)
+games/**/bin/
+games/**/obj/
+*.keystore
+*.jks
+out/
+
+# Artefatos de build
+*.apk
+*.aab
+*.ipa
+*.exe
+!games/**/*.exe

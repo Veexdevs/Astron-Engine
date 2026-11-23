@@ -1,0 +1,243 @@
+# ============================================================
+# Astron Engine — Builds dos jogos (C# / .NET 8)
+# Gera: APK (Android) · IPA (iOS) · EXE (Windows) · Linux
+# ============================================================
+name: 🎮 Build do Jogo
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Plataforma a buildar'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+          - windows
+          - linux
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------- EXE (Windows) ----------------
+  windows:
+    if: >-
+      github.event_name == 'push' ||
+      inputs.platform == 'all' ||
+      inputs.platform == 'windows'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore games/AstronGame/Desktop/AstronGame.Desktop.csproj
+
+      - name: Publish (win-x64, self-contained, single-file)
+        run: >
+          dotnet publish games/AstronGame/Desktop/AstronGame.Desktop.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:PublishTrimmed=false
+          -o out/windows
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronGame-windows-x64
+          path: out/windows/
+          if-no-files-found: error
+
+  # ---------------- Linux ----------------
+  linux:
+    if: >-
+      github.event_name == 'push' ||
+      inputs.platform == 'all' ||
+      inputs.platform == 'linux'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore games/AstronGame/Desktop/AstronGame.Desktop.csproj
+
+      - name: Publish (linux-x64, self-contained)
+        run: >
+          dotnet publish games/AstronGame/Desktop/AstronGame.Desktop.csproj
+          -c Release -r linux-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:PublishTrimmed=false
+          -o out/linux
+
+      - name: Empacotar (.tar.gz)
+        run: |
+          chmod +x out/linux/AstronGame
+          tar -czf AstronGame-linux-x64.tar.gz -C out/linux .
+
+      - name: Upload Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronGame-linux-x64
+          path: AstronGame-linux-x64.tar.gz
+          if-no-files-found: error
+
+  # ---------------- APK (Android) ----------------
+  android:
+    if: >-
+      github.event_name == 'push' ||
+      inputs.platform == 'all' ||
+      inputs.platform == 'android'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install workload Android
+        run: dotnet workload install android
+
+      - name: Gerar keystore de release
+        run: >
+          keytool -genkeypair -v
+          -keystore release.keystore
+          -alias astron
+          -keyalg RSA -keysize 2048
+          -validity 10000
+          -storepass astron123
+          -keypass astron123
+          -dname "CN=Astron Engine, OU=Games, O=Veexdevs, L=Sao Paulo, C=BR"
+
+      - name: Build + Sign APK
+        run: >
+          dotnet publish games/AstronGame/Android/AstronGame.Android.csproj
+          -c Release -f net8.0-android
+          -p:AndroidPackageFormat=apk
+          -p:AndroidKeyStore=true
+          -p:AndroidSigningKeyStore="${{ github.workspace }}/release.keystore"
+          -p:AndroidSigningKeyAlias=astron
+          -p:AndroidSigningKeyPass=astron123
+          -p:AndroidSigningStorePass=astron123
+
+      - name: Localizar APK assinado
+        run: |
+          set -e
+          mkdir -p artifacts
+          APK=$(find games -name "*-Signed.apk" | head -n 1)
+          if [ -z "$APK" ]; then
+            APK=$(find games -name "*.apk" | head -n 1)
+          fi
+          if [ -z "$APK" ]; then
+            echo "Nenhum APK encontrado"; exit 1
+          fi
+          cp "$APK" artifacts/AstronGame-release.apk
+          ls -la artifacts/
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronGame-android-apk
+          path: artifacts/AstronGame-release.apk
+          if-no-files-found: error
+
+  # ---------------- IPA (iOS) ----------------
+  ios:
+    if: >-
+      github.event_name == 'push' ||
+      inputs.platform == 'all' ||
+      inputs.platform == 'ios'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install workload iOS
+        run: dotnet workload install ios
+
+      - name: Build iOS (.app arm64)
+        run: >
+          dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj
+          -c Release -f net8.0-ios -r ios-arm64
+          -p:EnableCodeSigning=false
+
+      - name: Empacotar IPA (Payload/*.app)
+        run: |
+          set -e
+          mkdir -p artifacts
+          IPA=$(find games -name "*.ipa" | head -n 1)
+          if [ -n "$IPA" ]; then
+            cp "$IPA" artifacts/AstronGame-ios.ipa
+          else
+            APP=$(find games -name "*.app" -type d | head -n 1)
+            if [ -z "$APP" ]; then
+              echo "Nenhum .app encontrado"; exit 1
+            fi
+            STAGE=$(mktemp -d)
+            mkdir -p "$STAGE/Payload"
+            cp -R "$APP" "$STAGE/Payload/"
+            (cd "$STAGE" && zip -qr AstronGame-ios.ipa Payload)
+            cp "$STAGE/AstronGame-ios.ipa" artifacts/
+          fi
+          ls -la artifacts/
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronGame-ios-ipa
+          path: artifacts/AstronGame-ios.ipa
+          if-no-files-found: error
+
+  # ---------------- Release (tags v*) ----------------
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [windows, linux, android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar artefatos
+        uses: actions/download-artifact@v4
+        with:
+          pattern: AstronGame-*
+          path: dist/
+          merge-multiple: true
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/**
+          generate_release_notes: true
