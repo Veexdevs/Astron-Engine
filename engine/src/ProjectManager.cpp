@@ -52,9 +52,9 @@ ProjectManager::ProjectManager(fs::path workspaceRoot)
     fs::create_directories(projectsBase, ec);
 
     m_projects = {
-        { "meu-jogo",   "Meu Jogo",   "22/11/2026", "22/11/2026 • 14:32", "assets/textures/thumb-cube.jpg", projectsBase / "MeuJogo" },
-        { "projeto-rp", "Projeto RP", "21/11/2026", "21/11/2026 • 19:10", "assets/textures/thumb-city.jpg", projectsBase / "ProjetoRP" },
-        { "obby-teste", "Obby Teste", "20/11/2026", "20/11/2026 • 11:05", "assets/textures/thumb-obby.jpg", projectsBase / "ObbyTeste" }
+        { "meu-jogo",   "Meu Jogo",   "22/11/2026", "22/11/2026 \xE2\x80\xA2 14:32", "assets/textures/thumb-cube.jpg", projectsBase / "MeuJogo" },
+        { "projeto-rp", "Projeto RP", "18/11/2026", "18/11/2026 \xE2\x80\xA2 19:10", "assets/textures/thumb-city.jpg", projectsBase / "ProjetoRP" },
+        { "obby-teste", "Obby Teste", "12/11/2026", "12/11/2026 \xE2\x80\xA2 11:05", "assets/textures/thumb-obby.jpg", projectsBase / "ObbyTeste" }
     };
 
     seedProjectFiles(m_projects[0].rootDir, "Meu Jogo", "platformer");
@@ -248,8 +248,14 @@ ResTreeEntry ProjectManager::buildResTree() const {
         std::sort(files.begin(), files.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
             std::string na = a.path().filename().string();
             std::string nb = b.path().filename().string();
-            if (na == "default.scene" && nb != "default.scene") return true;
-            if (nb == "default.scene" && na != "default.scene") return false;
+            auto rank = [](const std::string& n) {
+                if (n == "default.scene") return 0;
+                if (n == "main.lua")      return 1;
+                if (n == "main.cs")       return 2;
+                return 3;
+            };
+            int ra = rank(na), rb = rank(nb);
+            if (ra != rb) return ra < rb;
             return na < nb;
         });
 
@@ -369,9 +375,14 @@ void ProjectManager::seedProjectFiles(const fs::path& dir, const std::string& pr
     if (!fs::exists(dir / "main.lua", ec)) {
         bool ok = false;
         std::string lua = readTextFile(m_workspaceRoot / "engine" / "scripting_lua" / "astron_behaviors.lua", &ok);
-        if (ok && !lua.empty()) {
-            writeTextFile(dir / "main.lua", lua);
+        if (!ok || lua.empty()) {
+            lua = "-- Astron Engine Lua Entry (" + projectName + ")\n"
+                  "local Scene = require('astron.scene')\n"
+                  "function OnStart()\n"
+                  "    print('[Astron] Cena Principal iniciada!')\n"
+                  "end\n";
         }
+        writeTextFile(dir / "main.lua", lua);
     }
 
     if (!fs::exists(dir / "sounds" / "jump.wav", ec)) {

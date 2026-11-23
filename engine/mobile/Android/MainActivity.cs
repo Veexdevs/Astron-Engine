@@ -143,11 +143,9 @@ namespace AstronEngine.AndroidApp
 
         private float ComputeScale(int pixelWidth, int pixelHeight)
         {
-            float density = Resources?.DisplayMetrics?.Density ?? 2.0f;
-            float targetHeight = 620f;
-            float fitScale = pixelHeight > 0 ? pixelHeight / targetHeight : 1.5f;
-            float chosen = Math.Min(density, fitScale);
-            return Math.Max(1.0f, chosen);
+            float targetHeight = 720f;
+            float fitScale = pixelHeight > 0 ? (pixelHeight / targetHeight) : 1.5f;
+            return Math.Max(0.45f, fitScale);
         }
 
         public override bool OnTouchEvent(MotionEvent e)

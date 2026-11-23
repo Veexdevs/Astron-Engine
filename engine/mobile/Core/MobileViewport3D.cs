@@ -10,10 +10,10 @@ namespace Astron.Engine.Mobile
     /// </summary>
     public sealed class MobileViewport3D
     {
-        public float YawDeg { get; set; } = -38f;
-        public float PitchDeg { get; set; } = 24f;
-        public float Distance { get; set; } = 10.5f;
-        public Vec3 Target { get; set; } = new Vec3(0f, 0.5f, 0f);
+        public float YawDeg { get; set; } = 26f;
+        public float PitchDeg { get; set; } = 18f;
+        public float Distance { get; set; } = 8.2f;
+        public Vec3 Target { get; set; } = new Vec3(0f, 0.25f, 0f);
 
         public bool Is2DMode { get; set; }
         public bool ShowGrid { get; set; } = true;
@@ -22,10 +22,10 @@ namespace Astron.Engine.Mobile
 
         public void ResetCamera()
         {
-            YawDeg = -38f;
-            PitchDeg = 24f;
-            Distance = 10.5f;
-            Target = new Vec3(0f, 0.5f, 0f);
+            YawDeg = 26f;
+            PitchDeg = 18f;
+            Distance = 8.2f;
+            Target = new Vec3(0f, 0.25f, 0f);
             Is2DMode = false;
         }
 
@@ -215,11 +215,14 @@ namespace Astron.Engine.Mobile
                     continue;
 
                 bool isSel = (node.Id == selectedId);
+                byte alphaVal = (byte)Math.Max(30, 255 - (int)(node.Transparency * 220f));
+                if (world.Nodes.Count == 1 && isSel && node.Transparency <= 0.001f)
+                    alphaVal = 78; // Translucent studio cube matching Image 1 reference
                 UiColor baseCol = new UiColor(
                     (byte)((node.ColorRgba >> 24) & 0xFF),
                     (byte)((node.ColorRgba >> 16) & 0xFF),
                     (byte)((node.ColorRgba >> 8) & 0xFF),
-                    (byte)Math.Max(30, 255 - (int)(node.Transparency * 220f))
+                    alphaVal
                 );
 
                 if (node.Primitive == AstronPrimitiveKind.Sphere)
@@ -413,33 +416,73 @@ namespace Astron.Engine.Mobile
         {
             if (!ProjectPoint(tip, vp, eye, right, up, forward, out float tx, out float ty, out _))
                 return;
-            g.DrawLine(ox, oy, tx, ty, col, 3.0f);
-            g.FillCircle(tx, ty, 5.2f, col);
+            float dx = tx - ox;
+            float dy = ty - oy;
+            float len = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (len < 6f) return;
+
+            float ux = dx / len;
+            float uy = dy / len;
+            float px = -uy;
+            float py = ux;
+
+            const float headLen = 13.5f;
+            const float headHalfW = 5.8f;
+            g.DrawLine(ox, oy, tx - ux * (headLen * 0.75f), ty - uy * (headLen * 0.75f), col, 2.8f);
+
+            float[] tri = new float[]
+            {
+                tx, ty,
+                tx - ux * headLen + px * headHalfW, ty - uy * headLen + py * headHalfW,
+                tx - ux * headLen - px * headHalfW, ty - uy * headLen - py * headHalfW
+            };
+            g.FillPolygon(tri, 3, col, new UiColor(0, 0, 0, 0), 0f);
         }
 
         private static void DrawOrientationWidget(
             IMobileCanvas g, float cx, float cy, float radius,
             Vec3 right, Vec3 up, Vec3 forward)
         {
-            // Projeta os eixos X, Y, Z do mundo no espaço da câmera
-            Vec3[] worldAxes = { new Vec3(1, 0, 0), new Vec3(0, 1, 0), new Vec3(0, 0, 1) };
-            string[] labels = { "X", "Y", "Z" };
+            Vec3[] worldAxes =
+            {
+                new Vec3( 1,  0,  0),
+                new Vec3( 0,  1,  0),
+                new Vec3( 0,  0,  1),
+                new Vec3(-1,  0,  0),
+                new Vec3( 0, -1,  0),
+                new Vec3( 0,  0, -1)
+            };
+            string[] labels = { "X", "Y", "Z", "", "", "Z" };
+            bool[] pos = { true, true, true, false, false, false };
             UiColor[] cols =
             {
-                new UiColor(238, 62, 68, 255),
-                new UiColor(72, 218, 82, 255),
-                new UiColor(58, 138, 252, 255)
+                new UiColor(238,  60,  60, 255),
+                new UiColor( 74, 218,  72, 255),
+                new UiColor( 48, 134, 252, 255),
+                new UiColor(142,  46,  48, 210),
+                new UiColor( 50, 128,  52, 210),
+                new UiColor( 42, 112, 218, 235)
             };
 
-            for (int i = 0; i < 3; i++)
+            g.FillCircle(cx, cy, 3.8f, new UiColor(140, 146, 160, 180));
+
+            for (int pass = 0; pass < 2; pass++)
             {
-                float sx = Vec3.Dot(worldAxes[i], right);
-                float sy = -Vec3.Dot(worldAxes[i], up);
-                float ex = cx + sx * radius;
-                float ey = cy + sy * radius;
-                g.DrawLine(cx, cy, ex, ey, cols[i], 2.4f);
-                g.FillCircle(ex, ey, 7.5f, cols[i]);
-                g.DrawText(labels[i], ex, ey - 5f, 9.5f, new UiColor(255, 255, 255, 255), true, true);
+                for (int i = 0; i < 6; i++)
+                {
+                    if ((pass == 0 && pos[i]) || (pass == 1 && !pos[i])) continue;
+                    float sx = Vec3.Dot(worldAxes[i], right);
+                    float sy = -Vec3.Dot(worldAxes[i], up);
+                    float rScale = pos[i] ? 1.0f : 0.78f;
+                    float ex = cx + sx * radius * rScale;
+                    float ey = cy + sy * radius * rScale;
+                    if (pos[i])
+                        g.DrawLine(cx, cy, ex, ey, cols[i], 2.4f);
+                    float ballR = pos[i] ? 9.5f : (labels[i].Length > 0 ? 8.0f : 5.5f);
+                    g.FillCircle(ex, ey, ballR, cols[i]);
+                    if (labels[i].Length > 0)
+                        g.DrawText(labels[i], ex, ey - 5f, 9.5f, new UiColor(255, 255, 255, 255), true, true);
+                }
             }
         }
     }

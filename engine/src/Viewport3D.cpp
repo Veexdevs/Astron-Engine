@@ -549,10 +549,10 @@ void Viewport3D::zoom(float wheelDelta) {
 }
 
 void Viewport3D::resetCamera() {
-    yawDeg = -42.0f;
-    pitchDeg = 22.0f;
-    distance = 9.5f;
-    target = { 0.0f, 0.4f, 0.0f };
+    yawDeg = 26.0f;
+    pitchDeg = 18.0f;
+    distance = 8.2f;
+    target = { 0.0f, 0.25f, 0.0f };
 }
 
 int Viewport3D::pickObject(const Scene& scene, float mouseX, float mouseY, int vpW, int vpH) const {
