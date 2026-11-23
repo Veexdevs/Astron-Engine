@@ -234,9 +234,9 @@ namespace AstronEngine.AndroidApp
     {
         private readonly Context _context;
         private readonly Dictionary<string, Bitmap> _bitmapCache = new Dictionary<string, Bitmap>();
-        private readonly Paint _fillPaint = new Paint(PaintFlags.AntiAlias) { Style = Paint.Style.Fill };
-        private readonly Paint _strokePaint = new Paint(PaintFlags.AntiAlias) { Style = Paint.Style.Stroke };
-        private readonly Paint _textPaint = new Paint(PaintFlags.AntiAlias) { Style = Paint.Style.Fill };
+        private readonly Paint _fillPaint = new Paint(PaintFlags.AntiAlias);
+        private readonly Paint _strokePaint = new Paint(PaintFlags.AntiAlias);
+        private readonly Paint _textPaint = new Paint(PaintFlags.AntiAlias);
         private readonly Paint _bitmapPaint = new Paint(PaintFlags.AntiAlias | PaintFlags.FilterBitmap);
 
         private Canvas _canvas;
@@ -246,6 +246,9 @@ namespace AstronEngine.AndroidApp
         public AstronAndroidCanvas(Context context)
         {
             _context = context;
+            _fillPaint.SetStyle(Paint.Style.Fill);
+            _strokePaint.SetStyle(Paint.Style.Stroke);
+            _textPaint.SetStyle(Paint.Style.Fill);
         }
 
         public void Bind(Canvas canvas, float width, float height)

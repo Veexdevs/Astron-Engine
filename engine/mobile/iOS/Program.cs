@@ -153,7 +153,7 @@ namespace AstronEngine.iOSApp
                 TextColor = UIColor.FromRGB(230, 235, 245),
                 Font = UIFont.FromName("Menlo", 13f) ?? UIFont.SystemFontOfSize(13f),
                 Text = initialText,
-                AutocorrectionType = UITextAutocorrectionType.No;
+                AutocorrectionType = UITextAutocorrectionType.No,
                 AutocapitalizationType = UITextAutocapitalizationType.None,
                 AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight,
             };
