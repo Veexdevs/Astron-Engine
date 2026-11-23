@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>AstronEngine.iOSApp</RootNamespace>
+    <AssemblyName>AstronEngine.iOS</AssemblyName>
+    <ApplicationId>com.astron.engine.editor</ApplicationId>
+    <ApplicationTitle>Astron Engine</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifier>ios-arm64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\AstronEngine.Mobile.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <BundleResource Include="..\..\..\assets\textures\astron-app-icon-180.png" Link="astron-app-icon-180.png" />
+    <BundleResource Include="..\..\..\assets\textures\astron-app-icon.png" Link="astron-app-icon.png" />
+    <BundleResource Include="..\..\..\assets\textures\astron-mark.png" Link="astron-mark.png" />
+    <BundleResource Include="..\..\..\assets\textures\astron-icon.png" Link="astron-icon.png" />
+    <BundleResource Include="..\..\..\assets\textures\astron-lockup.png" Link="astron-lockup.png" />
+    <BundleResource Include="..\..\..\assets\textures\astron-horizontal.png" Link="astron-horizontal.png" />
+    <BundleResource Include="..\..\..\assets\textures\login-planet.png" Link="login-planet.png" />
+    <BundleResource Include="..\..\..\assets\textures\hero-planet.jpg" Link="hero-planet.jpg" />
+    <BundleResource Include="..\..\..\assets\textures\thumb-cube.jpg" Link="thumb-cube.jpg" />
+    <BundleResource Include="..\..\..\assets\textures\thumb-city.jpg" Link="thumb-city.jpg" />
+    <BundleResource Include="..\..\..\assets\textures\thumb-obby.jpg" Link="thumb-obby.jpg" />
+  </ItemGroup>
+
+</Project>

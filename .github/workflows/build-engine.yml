@@ -1,9 +1,13 @@
 # ============================================================
-# Astron Engine — Native Desktop Engine Build
-# Linguagens nativas: C++20 / C11 / GLSL / HLSL / Rust / Lua / CMake
-# Compila AstronEngine + astron-pak (Linux x64 & Windows x64 .exe)
+# Astron Engine — Native Multi-Platform Engine Build
+# Linguagens nativas: C++20 / C11 / C# / GLSL / HLSL / Rust / Lua / CMake
+# Gera:
+#   - AstronEngine Linux x64 (.tar.gz)
+#   - AstronEngine Windows x64 (.exe / .zip)
+#   - AstronEngine Android (.apk assinado)
+#   - AstronEngine iOS / iPadOS (.ipa arm64)
 # ============================================================
-name: 🪐 Build Astron Engine (C++ / C / GLSL / Rust)
+name: 🪐 Build Astron Engine (Windows .exe · Linux · Android .apk · iOS .ipa)
 
 on:
   push:
@@ -105,7 +109,7 @@ jobs:
       - name: Executar Testes Nativos C++20 / C11 / SIMD / WAV
         run: ctest --test-dir build -C Release --output-on-failure
 
-      - name: Empacotar AstronEngine Windows x64 + Recursos .apak
+      - name: Empacotar AstronEngine Windows x64 (.exe + .apak)
         shell: bash
         run: |
           mkdir -p dist-win/AstronEngine
@@ -114,10 +118,231 @@ jobs:
           cp -r assets shaders games engine/scripting_lua dist-win/AstronEngine/
           ./dist-win/AstronEngine/astron-pak.exe pack shaders dist-win/AstronEngine/shaders.apak
           ./dist-win/AstronEngine/astron-pak.exe verify dist-win/AstronEngine/shaders.apak
+          7z a -tzip AstronEngine-windows-x64.zip ./dist-win/AstronEngine/*
 
       - name: Upload AstronEngine Windows (.exe)
         uses: actions/upload-artifact@v4
         with:
           name: AstronEngine-windows-x64
-          path: dist-win/AstronEngine/
+          path: AstronEngine-windows-x64.zip
           if-no-files-found: error
+
+  # ---------------- Android Native Engine (.apk) ----------------
+  engine-android:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Instalar workload Android
+        run: dotnet workload install android
+
+      - name: Gerar keystore de release (Astron Engine)
+        run: >
+          keytool -genkeypair -v
+          -keystore astron-engine.keystore
+          -alias astronengine
+          -keyalg RSA -keysize 2048
+          -validity 10000
+          -storepass astron123
+          -keypass astron123
+          -dname "CN=Astron Engine, OU=Engine, O=Veexdevs, L=Sao Paulo, C=BR"
+
+      - name: Compilar e Assinar AstronEngine.apk (Release)
+        run: |
+          set -o pipefail
+          dotnet publish engine/mobile/Android/AstronEngine.Android.csproj \
+            -c Release -f net10.0-android \
+            -p:AndroidPackageFormat=apk \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="${{ github.workspace }}/astron-engine.keystore" \
+            -p:AndroidSigningKeyAlias=astronengine \
+            -p:AndroidSigningKeyPass=astron123 \
+            -p:AndroidSigningStorePass=astron123 2>&1 | tee android_engine.log || {
+              grep -iE "error CS|error XA|error MSB|error APT" android_engine.log | head -n 20 | while IFS= read -r line; do
+                echo "::error::$line"
+              done
+              exit 1
+            }
+
+      - name: Coletar AstronEngine-release.apk assinado
+        run: |
+          set -e
+          mkdir -p artifacts-android
+          APK=$(find engine/mobile/Android -name "*-Signed.apk" | head -n 1)
+          if [ -z "$APK" ]; then
+            APK=$(find engine/mobile/Android -name "*.apk" | head -n 1)
+          fi
+          if [ -z "$APK" ]; then
+            echo "::error::Nenhum APK da Astron Engine foi encontrado!"
+            exit 1
+          fi
+          cp "$APK" artifacts-android/AstronEngine-release.apk
+          ls -lh artifacts-android/
+
+      - name: Upload AstronEngine Android (.apk)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronEngine-android-apk
+          path: artifacts-android/AstronEngine-release.apk
+          if-no-files-found: error
+
+  # ---------------- iOS / iPadOS Native Engine (.ipa) ----------------
+  engine-ios:
+    runs-on: macos-26-intel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 (10.0.401 para Xcode 26.6)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.401
+
+      - name: Instalar workload iOS (10.0.401 para Xcode 26.6)
+        run: dotnet workload install ios --version 10.0.401
+
+      - name: Selecionar Xcode real compatível com workload iOS
+        run: |
+          ls -lad /Applications/*Xcode* || true
+          SDK_XML=$(find /usr/local/share/dotnet "$HOME/.dotnet" -name "SdkVersions.xml" 2>/dev/null | grep -i "iOS" | head -n 1 || true)
+          TARGET_APP=""
+          if [ -n "$SDK_XML" ]; then
+            REQ=$(python3 -c 'import re,sys; t=open(sys.argv[1]).read(); m=re.search(r"Xcode[>=<\x22\s]*([0-9]+\.[0-9]+)", t); print(m.group(1) if m else "")' "$SDK_XML")
+            echo "Workload iOS ($SDK_XML) solicita Xcode: $REQ"
+            if [ -n "$REQ" ]; then
+              for cand in /Applications/Xcode_"${REQ}"*.app; do
+                if [ -e "$cand" ]; then
+                  TARGET_APP=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$cand")
+                fi
+              done
+            fi
+          fi
+          if [ -z "$TARGET_APP" ]; then
+            LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1 || true)
+            if [ -n "$LATEST" ]; then
+              TARGET_APP=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$LATEST")
+            fi
+          fi
+          if [ -n "$TARGET_APP" ] && [ -d "$TARGET_APP/Contents/Developer" ]; then
+            echo "Selecionando diretório real do Xcode: $TARGET_APP/Contents/Developer"
+            sudo xcode-select -s "$TARGET_APP/Contents/Developer"
+          fi
+          xcode-select -p
+          xcodebuild -version
+          if ! xcodebuild -showsdks | grep -qi iphoneos; then
+            echo "Baixando plataforma iOS para o Xcode selecionado..."
+            xcodebuild -downloadPlatform iOS
+          fi
+
+      - name: Compilar AstronEngine.app (arm64 iOS/iPadOS)
+        run: |
+          set -o pipefail
+          build_ios() {
+            dotnet publish engine/mobile/iOS/AstronEngine.iOS.csproj \
+              -c Release -f net10.0-ios -r ios-arm64 \
+              -p:BuildIpa=false \
+              -p:EnableCodeSigning=false \
+              -p:CodesignKey="" \
+              -p:CodesignProvision="" \
+              -p:CodesignEntitlements=""
+          }
+          build_ios 2>&1 | tee ios_engine.log || {
+            REQ_XC=$(python3 -c 'import re; t=open("ios_engine.log").read(); m=re.search(r"requires Xcode ([0-9]+\.[0-9]+)", t); print(m.group(1) if m else "")')
+            if [ -n "$REQ_XC" ]; then
+              for cand in /Applications/Xcode_"${REQ_XC}"*.app; do
+                if [ -e "$cand" ]; then
+                  REAL_XC=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$cand")
+                  echo "Re-selecionando Xcode real exigido: $REAL_XC/Contents/Developer"
+                  sudo xcode-select -s "$REAL_XC/Contents/Developer"
+                  break
+                fi
+              done
+              if ! xcodebuild -showsdks | grep -qi iphoneos; then
+                xcodebuild -downloadPlatform iOS
+              fi
+              build_ios 2>&1 | tee ios_engine_retry.log || {
+                grep -iE "error" ios_engine_retry.log | head -n 20 | while IFS= read -r line; do
+                  echo "::error::$line"
+                done
+                exit 1
+              }
+            else
+              grep -iE "error" ios_engine.log | head -n 20 | while IFS= read -r line; do
+                echo "::error::$line"
+              done
+              exit 1
+            fi
+          }
+
+      - name: Empacotar AstronEngine-ios.ipa (Payload/AstronEngine.iOS.app arm64)
+        run: |
+          set -e
+          mkdir -p artifacts-ios
+          echo "Procurando bundles .app compilados em bin/:"
+          find engine/mobile/iOS/bin -maxdepth 6 -name "*.app" -type d -exec du -sh {} + || true
+          APP=$(find engine/mobile/iOS/bin -name "*.app" -type d -exec du -sk {} + | sort -nr | head -n 1 | awk '{print $2}')
+          if [ -z "$APP" ] || [ ! -d "$APP" ]; then
+            echo "::error::Nenhum pacote .app compilado encontrado em engine/mobile/iOS/bin!"
+            exit 1
+          fi
+          echo "Bundle selecionado: $APP"
+          ls -lh "$APP"
+          if [ ! -f "$APP/AstronEngine.iOS" ]; then
+            echo "::error::Executável arm64 AstronEngine.iOS ausente dentro de $APP!"
+            exit 1
+          fi
+          file "$APP/AstronEngine.iOS"
+          STAGE=$(mktemp -d)
+          mkdir -p "$STAGE/Payload"
+          cp -R "$APP" "$STAGE/Payload/"
+          (cd "$STAGE" && zip -qr AstronEngine-ios.ipa Payload)
+          cp "$STAGE/AstronEngine-ios.ipa" artifacts-ios/
+          IPA_BYTES=$(wc -c < artifacts-ios/AstronEngine-ios.ipa | tr -d ' ')
+          echo "Tamanho final do AstronEngine-ios.ipa: $IPA_BYTES bytes"
+          if [ "$IPA_BYTES" -lt 1000000 ]; then
+            echo "::error::IPA gerado muito pequeno ($IPA_BYTES bytes) — verifique o bundle .app!"
+            exit 1
+          fi
+          ls -lh artifacts-ios/
+
+      - name: Upload AstronEngine iOS (.ipa)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AstronEngine-ios-ipa
+          path: artifacts-ios/AstronEngine-ios.ipa
+          if-no-files-found: error
+
+  # ---------------- Publicar Release Oficial (tags v*) ----------------
+  engine-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [engine-linux, engine-windows, engine-android, engine-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar todos os pacotes nativos da Astron Engine
+        uses: actions/download-artifact@v4
+        with:
+          pattern: AstronEngine-*
+          path: release-dist/
+          merge-multiple: true
+
+      - name: Publicar GitHub Release (.exe, Linux, .apk, .ipa)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-dist/**
+          generate_release_notes: true
