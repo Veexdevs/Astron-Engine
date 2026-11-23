@@ -9,12 +9,12 @@ using Astron.Game;
 
 namespace Astron.AndroidApp
 {
-    [Activity(
+    [Android.App.Activity(
         Label = "Astron Game",
         MainLauncher = true,
         ScreenOrientation = ScreenOrientation.SensorLandscape,
         ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
-    public sealed class MainActivity : Activity
+    public sealed class MainActivity : Android.App.Activity
     {
         protected override void OnCreate(Bundle savedInstanceState)
         {
