@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace astron {
 
@@ -19,6 +20,13 @@ public:
 
     GpuTexture get(const std::string& relAssetPath);
     void clear();
+
+    static bool loadRgbaPixels(
+        const std::filesystem::path& filePath,
+        std::vector<unsigned char>& outPixels,
+        int& outW,
+        int& outH
+    );
 
 private:
     std::filesystem::path m_root;

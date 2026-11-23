@@ -36,21 +36,28 @@ void EngineApp::renderSplash(float dt, float w, float h) {
     const float cx = w * 0.5f;
     const float cy = h * 0.5f;
 
-    // Official Astron Engine Saturn-ring planet logo
-    UIWidgets::DrawPlanetMark(dl, ImVec2(cx, cy - 118.0f), 78.0f, IM_COL32(255, 255, 255, 255), IM_COL32(0, 0, 0, 255));
+    // Official Astron Engine Saturn-ring planet + wordmark lockup texture (with procedural fallback)
+    GpuTexture lockupTex = m_textures.get("assets/textures/astron-lockup.png");
+    if (lockupTex.id != 0) {
+        const float lw = 380.0f;
+        const float lh = lw * (static_cast<float>(lockupTex.height) / std::max(1, lockupTex.width));
+        dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(lockupTex.id)),
+                     ImVec2(cx - lw * 0.5f, cy - lh + 68.0f),
+                     ImVec2(cx + lw * 0.5f, cy + 68.0f));
+    } else {
+        UIWidgets::DrawPlanetMark(dl, ImVec2(cx, cy - 118.0f), 78.0f, IM_COL32(255, 255, 255, 255), IM_COL32(0, 0, 0, 255));
+        if (fontLogoBig) ImGui::PushFont(fontLogoBig);
+        const char* wordA = "Astron";
+        ImVec2 szA = ImGui::CalcTextSize(wordA);
+        dl->AddText(ImVec2(cx - szA.x * 0.5f, cy - 22.0f), IM_COL32(255, 255, 255, 255), wordA);
+        if (fontLogoBig) ImGui::PopFont();
 
-    // "Astron" + "Engine"
-    if (fontLogoBig) ImGui::PushFont(fontLogoBig);
-    const char* wordA = "Astron";
-    ImVec2 szA = ImGui::CalcTextSize(wordA);
-    dl->AddText(ImVec2(cx - szA.x * 0.5f, cy - 22.0f), IM_COL32(255, 255, 255, 255), wordA);
-    if (fontLogoBig) ImGui::PopFont();
-
-    if (fontLogoMed) ImGui::PushFont(fontLogoMed);
-    const char* wordE = "E n g i n e";
-    ImVec2 szE = ImGui::CalcTextSize(wordE);
-    dl->AddText(ImVec2(cx - szE.x * 0.5f, cy + 44.0f), IM_COL32(236, 236, 240, 255), wordE);
-    if (fontLogoMed) ImGui::PopFont();
+        if (fontLogoMed) ImGui::PushFont(fontLogoMed);
+        const char* wordE = "E n g i n e";
+        ImVec2 szE = ImGui::CalcTextSize(wordE);
+        dl->AddText(ImVec2(cx - szE.x * 0.5f, cy + 44.0f), IM_COL32(236, 236, 240, 255), wordE);
+        if (fontLogoMed) ImGui::PopFont();
+    }
 
     // Progress pill bar
     const float barW = std::min(620.0f, w * 0.62f);
@@ -97,20 +104,28 @@ void EngineApp::renderLogin(float w, float h) {
 
     UIWidgets::DrawWindowChrome(w, onMinimizeWindow, onMaximizeWindow, [this]() { m_screen = ScreenId::Splash; m_splashProgress = 0.0f; });
 
-    // Left Half: Brand Mark + Wordmark + Tagline
+    // Left Half: Official Astron Engine Brand Lockup + Tagline
     const float lx = w * 0.25f;
     const float ly = h * 0.46f;
-    UIWidgets::DrawPlanetMark(dl, ImVec2(lx, ly - 95.0f), 84.0f, IM_COL32(255, 255, 255, 255), IM_COL32(0, 0, 0, 255));
+    GpuTexture loginLockup = m_textures.get("assets/textures/astron-lockup.png");
+    if (loginLockup.id != 0) {
+        const float lw = 360.0f;
+        const float lh = lw * (static_cast<float>(loginLockup.height) / std::max(1, loginLockup.width));
+        dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(loginLockup.id)),
+                     ImVec2(lx - lw * 0.5f, ly - lh + 102.0f),
+                     ImVec2(lx + lw * 0.5f, ly + 102.0f));
+    } else {
+        UIWidgets::DrawPlanetMark(dl, ImVec2(lx, ly - 95.0f), 84.0f, IM_COL32(255, 255, 255, 255), IM_COL32(0, 0, 0, 255));
+        if (fontLogoBig) ImGui::PushFont(fontLogoBig);
+        ImVec2 szA = ImGui::CalcTextSize("Astron");
+        dl->AddText(ImVec2(lx - szA.x * 0.5f, ly + 8.0f), IM_COL32(255, 255, 255, 255), "Astron");
+        if (fontLogoBig) ImGui::PopFont();
 
-    if (fontLogoBig) ImGui::PushFont(fontLogoBig);
-    ImVec2 szA = ImGui::CalcTextSize("Astron");
-    dl->AddText(ImVec2(lx - szA.x * 0.5f, ly + 8.0f), IM_COL32(255, 255, 255, 255), "Astron");
-    if (fontLogoBig) ImGui::PopFont();
-
-    if (fontLogoMed) ImGui::PushFont(fontLogoMed);
-    ImVec2 szE = ImGui::CalcTextSize("E n g i n e");
-    dl->AddText(ImVec2(lx - szE.x * 0.5f, ly + 74.0f), IM_COL32(236, 236, 240, 255), "E n g i n e");
-    if (fontLogoMed) ImGui::PopFont();
+        if (fontLogoMed) ImGui::PushFont(fontLogoMed);
+        ImVec2 szE = ImGui::CalcTextSize("E n g i n e");
+        dl->AddText(ImVec2(lx - szE.x * 0.5f, ly + 74.0f), IM_COL32(236, 236, 240, 255), "E n g i n e");
+        if (fontLogoMed) ImGui::PopFont();
+    }
 
     const char* tag = "C r i e .   D e s e n v o l v a .   E x p l o r e .";
     ImVec2 szT = ImGui::CalcTextSize(tag);

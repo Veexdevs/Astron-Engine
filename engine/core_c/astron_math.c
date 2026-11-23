@@ -299,8 +299,8 @@ bool astron_hex_to_rgba(const char* hex, AstronVec4* outRgba) {
 }
 
 void astron_rgba_to_hex(AstronVec4 rgba, char outHex[8]) {
-    int r = (int)fminf(255.0f, fmaxf(0.0f, roundf(rgba.x * 255.0f)));
-    int g = (int)fminf(255.0f, fmaxf(0.0f, roundf(rgba.y * 255.0f)));
-    int b = (int)fminf(255.0f, fmaxf(0.0f, roundf(rgba.z * 255.0f)));
+    unsigned r = (unsigned)((int)fminf(255.0f, fmaxf(0.0f, roundf(rgba.x * 255.0f)))) & 0xFFu;
+    unsigned g = (unsigned)((int)fminf(255.0f, fmaxf(0.0f, roundf(rgba.y * 255.0f)))) & 0xFFu;
+    unsigned b = (unsigned)((int)fminf(255.0f, fmaxf(0.0f, roundf(rgba.z * 255.0f)))) & 0xFFu;
     snprintf(outHex, 8, "#%02X%02X%02X", r, g, b);
 }

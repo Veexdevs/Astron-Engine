@@ -1,8 +1,9 @@
 # ============================================================
-# Astron Engine — Native Desktop Engine Build (C++20 / C11 / GLSL)
-# Compila o editor nativo AstronEngine (.exe Windows + binário Linux x64)
+# Astron Engine — Native Desktop Engine Build
+# Linguagens nativas: C++20 / C11 / GLSL / HLSL / Rust / Lua / CMake
+# Compila AstronEngine + astron-pak (Linux x64 & Windows x64 .exe)
 # ============================================================
-name: 🪐 Build Astron Engine (C++ / C / GLSL)
+name: 🪐 Build Astron Engine (C++ / C / GLSL / Rust)
 
 on:
   push:
@@ -31,10 +32,28 @@ jobs:
             libxinerama-dev libxcursor-dev libxi-dev \
             libcurl4-openssl-dev
 
+      - name: Instalar Toolchain Rust Estável
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Compilar & Testar Empacotador Binário Rust (astron-pak)
+        run: |
+          set -o pipefail
+          {
+            rustc --version
+            cargo --version
+            cargo test --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+            cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+          } 2>&1 | tee rust.log || {
+            tail -n 25 rust.log | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          }
+
       - name: Configurar CMake (Release)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Compilar AstronEngine + Testes Nativos
+      - name: Compilar AstronEngine + Testes Nativos C++20 / C11
         run: |
           set -o pipefail
           cmake --build build --parallel 2>&1 | tee build.log || {
@@ -44,15 +63,18 @@ jobs:
             exit 1
           }
 
-      - name: Executar Testes Nativos C++20 / C11
+      - name: Executar Testes Nativos C++20 / C11 / SIMD / WAV
         run: ctest --test-dir build --output-on-failure
 
-      - name: Empacotar AstronEngine Linux x64
+      - name: Empacotar AstronEngine Linux x64 + Recursos .apak
         run: |
           mkdir -p dist-linux/AstronEngine
           cp build/AstronEngine dist-linux/AstronEngine/
-          cp -r assets shaders games dist-linux/AstronEngine/
-          chmod +x dist-linux/AstronEngine/AstronEngine
+          cp engine/tools/astron_pak_rs/target/release/astron-pak dist-linux/AstronEngine/
+          cp -r assets shaders games engine/scripting_lua dist-linux/AstronEngine/
+          ./dist-linux/AstronEngine/astron-pak pack shaders dist-linux/AstronEngine/shaders.apak
+          ./dist-linux/AstronEngine/astron-pak verify dist-linux/AstronEngine/shaders.apak
+          chmod +x dist-linux/AstronEngine/AstronEngine dist-linux/AstronEngine/astron-pak
           tar -czf AstronEngine-linux-x64.tar.gz -C dist-linux AstronEngine
 
       - name: Upload AstronEngine Linux x64
@@ -69,21 +91,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Compilar & Testar Empacotador Binário Rust (astron-pak.exe)
+        run: |
+          cargo test --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+          cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+
       - name: Configurar CMake (MSVC x64)
         run: cmake -B build -A x64
 
       - name: Compilar AstronEngine.exe (Release)
         run: cmake --build build --config Release --parallel
 
-      - name: Executar Testes Nativos C++20 / C11
+      - name: Executar Testes Nativos C++20 / C11 / SIMD / WAV
         run: ctest --test-dir build -C Release --output-on-failure
 
-      - name: Empacotar AstronEngine Windows x64
+      - name: Empacotar AstronEngine Windows x64 + Recursos .apak
         shell: bash
         run: |
           mkdir -p dist-win/AstronEngine
           cp build/Release/AstronEngine.exe dist-win/AstronEngine/
-          cp -r assets shaders games dist-win/AstronEngine/
+          cp engine/tools/astron_pak_rs/target/release/astron-pak.exe dist-win/AstronEngine/
+          cp -r assets shaders games engine/scripting_lua dist-win/AstronEngine/
+          ./dist-win/AstronEngine/astron-pak.exe pack shaders dist-win/AstronEngine/shaders.apak
+          ./dist-win/AstronEngine/astron-pak.exe verify dist-win/AstronEngine/shaders.apak
 
       - name: Upload AstronEngine Windows (.exe)
         uses: actions/upload-artifact@v4

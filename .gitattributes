@@ -1,0 +1,37 @@
+# ============================================================
+# Astron Engine — GitHub Linguist Native Language Configuration
+# 100% Native Engine (C++20, C#, C11, GLSL, HLSL, Rust, Lua, CMake)
+# ============================================================
+
+# Exclui bibliotecas externas single-header da contagem de linguagens
+engine/third_party/** linguist-vendored=true
+
+# C++20 (Editor Desktop, Renderer OpenGL 3.3, Agente IA Autônomo, UI)
+engine/include/*.hpp linguist-language=C++ linguist-detectable=true
+engine/src/*.cpp linguist-language=C++ linguist-detectable=true
+engine/tests/*.cpp linguist-language=C++ linguist-detectable=true
+
+# C11 (Matemática 3D, Hardware SIMD SSE2/NEON, Áudio PCM WAV, Loader GL, Plataforma)
+engine/core_c/*.c linguist-language=C linguist-detectable=true
+engine/core_c/*.h linguist-language=C linguist-detectable=true
+
+# C# (.NET Runtime & Jogos Nativos Android .apk / iOS .ipa / Windows .exe / Linux)
+*.cs linguist-language=C# linguist-detectable=true
+
+# GLSL 3.30 Core (Shaders GPU OpenGL 3D PBR, Céu, Oceano, Holograma, Toon, Bloom)
+shaders/*.vert linguist-language=GLSL linguist-detectable=true
+shaders/*.frag linguist-language=GLSL linguist-detectable=true
+shaders/*.glsl linguist-language=GLSL linguist-detectable=true
+
+# HLSL Shader Model 5.0 (DirectX 11 / DirectX 12 Windows PBR & Compute Shaders)
+shaders/hlsl/*.hlsl linguist-language=HLSL linguist-detectable=true
+
+# Rust (Empacotador binário nativo astron-pak .apak + FFI C)
+engine/tools/astron_pak_rs/**/*.rs linguist-language=Rust linguist-detectable=true
+
+# Lua 5.4 (Módulo de comportamentos rápidos de entidades e cutscenes)
+engine/scripting_lua/*.lua linguist-language=Lua linguist-detectable=true
+
+# CMake (Sistema de build nativo multiplataforma)
+CMakeLists.txt linguist-language=CMake linguist-detectable=true
+*.cmake linguist-language=CMake linguist-detectable=true
