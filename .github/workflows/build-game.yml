@@ -238,8 +238,9 @@ jobs:
         run: |
           set -o pipefail
           build_ios() {
-            dotnet build games/AstronGame/iOS/AstronGame.iOS.csproj \
+            dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj \
               -c Release -f net10.0-ios -r ios-arm64 \
+              -p:BuildIpa=false \
               -p:EnableCodeSigning=false \
               -p:CodesignKey="" \
               -p:CodesignProvision="" \
@@ -281,9 +282,9 @@ jobs:
           if [ -n "$IPA" ]; then
             cp "$IPA" artifacts/AstronGame-ios.ipa
           else
-            APP=$(find games -name "*.app" -type d | head -n 1)
+            APP=$(find games/AstronGame/iOS/bin -name "*.app" -type d -exec du -sk {} + | sort -nr | head -n 1 | awk '{print $2}')
             if [ -z "$APP" ]; then
-              echo "Nenhum .app encontrado"; exit 1
+              echo "::error::Nenhum .app encontrado em games/AstronGame/iOS/bin"; exit 1
             fi
             STAGE=$(mktemp -d)
             mkdir -p "$STAGE/Payload"

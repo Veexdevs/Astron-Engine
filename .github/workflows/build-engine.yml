@@ -253,8 +253,9 @@ jobs:
         run: |
           set -o pipefail
           build_ios() {
-            dotnet build engine/mobile/iOS/AstronEngine.iOS.csproj \
+            dotnet publish engine/mobile/iOS/AstronEngine.iOS.csproj \
               -c Release -f net10.0-ios -r ios-arm64 \
+              -p:BuildIpa=false \
               -p:EnableCodeSigning=false \
               -p:CodesignKey="" \
               -p:CodesignProvision="" \
@@ -288,24 +289,34 @@ jobs:
             fi
           }
 
-      - name: Empacotar AstronEngine-ios.ipa (Payload/*.app)
+      - name: Empacotar AstronEngine-ios.ipa (Payload/AstronEngine.iOS.app arm64)
         run: |
           set -e
           mkdir -p artifacts-ios
-          IPA=$(find engine/mobile/iOS -name "*.ipa" | head -n 1)
-          if [ -n "$IPA" ]; then
-            cp "$IPA" artifacts-ios/AstronEngine-ios.ipa
-          else
-            APP=$(find engine/mobile/iOS -name "*.app" -type d | head -n 1)
-            if [ -z "$APP" ]; then
-              echo "::error::Nenhum pacote .app da Astron Engine foi gerado!"
-              exit 1
-            fi
-            STAGE=$(mktemp -d)
-            mkdir -p "$STAGE/Payload"
-            cp -R "$APP" "$STAGE/Payload/"
-            (cd "$STAGE" && zip -qr AstronEngine-ios.ipa Payload)
-            cp "$STAGE/AstronEngine-ios.ipa" artifacts-ios/
+          echo "Procurando bundles .app compilados em bin/:"
+          find engine/mobile/iOS/bin -maxdepth 6 -name "*.app" -type d -exec du -sh {} + || true
+          APP=$(find engine/mobile/iOS/bin -name "*.app" -type d -exec du -sk {} + | sort -nr | head -n 1 | awk '{print $2}')
+          if [ -z "$APP" ] || [ ! -d "$APP" ]; then
+            echo "::error::Nenhum pacote .app compilado encontrado em engine/mobile/iOS/bin!"
+            exit 1
+          fi
+          echo "Bundle selecionado: $APP"
+          ls -lh "$APP"
+          if [ ! -f "$APP/AstronEngine.iOS" ]; then
+            echo "::error::Executável arm64 AstronEngine.iOS ausente dentro de $APP!"
+            exit 1
+          fi
+          file "$APP/AstronEngine.iOS"
+          STAGE=$(mktemp -d)
+          mkdir -p "$STAGE/Payload"
+          cp -R "$APP" "$STAGE/Payload/"
+          (cd "$STAGE" && zip -qr AstronEngine-ios.ipa Payload)
+          cp "$STAGE/AstronEngine-ios.ipa" artifacts-ios/
+          IPA_BYTES=$(wc -c < artifacts-ios/AstronEngine-ios.ipa | tr -d ' ')
+          echo "Tamanho final do AstronEngine-ios.ipa: $IPA_BYTES bytes"
+          if [ "$IPA_BYTES" -lt 1000000 ]; then
+            echo "::error::IPA gerado muito pequeno ($IPA_BYTES bytes) — verifique o bundle .app!"
+            exit 1
           fi
           ls -lh artifacts-ios/
 
