@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>AstronEngine.AndroidApp</RootNamespace>
+    <AssemblyName>AstronEngine.Android</AssemblyName>
+    <ApplicationId>com.astron.engine.editor</ApplicationId>
+    <ApplicationTitle>Astron Engine</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\AstronEngine.Mobile.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AndroidAsset Include="..\..\..\assets\textures\astron-mark.png" Link="Assets\astron-mark.png" />
+    <AndroidAsset Include="..\..\..\assets\textures\astron-icon.png" Link="Assets\astron-icon.png" />
+    <AndroidAsset Include="..\..\..\assets\textures\astron-lockup.png" Link="Assets\astron-lockup.png" />
+    <AndroidAsset Include="..\..\..\assets\textures\astron-horizontal.png" Link="Assets\astron-horizontal.png" />
+    <AndroidAsset Include="..\..\..\assets\textures\astron-app-icon.png" Link="Assets\astron-app-icon.png" />
+    <AndroidAsset Include="..\..\..\assets\textures\login-planet.png" Link="Assets\login-planet.png" />
+    <AndroidAsset Include="..\..\..\assets\textures\hero-planet.jpg" Link="Assets\hero-planet.jpg" />
+    <AndroidAsset Include="..\..\..\assets\textures\thumb-cube.jpg" Link="Assets\thumb-cube.jpg" />
+    <AndroidAsset Include="..\..\..\assets\textures\thumb-city.jpg" Link="Assets\thumb-city.jpg" />
+    <AndroidAsset Include="..\..\..\assets\textures\thumb-obby.jpg" Link="Assets\thumb-obby.jpg" />
+  </ItemGroup>
+
+</Project>
