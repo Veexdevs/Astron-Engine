@@ -193,13 +193,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET 10
+      - name: Setup .NET 10 (10.0.401 para Xcode 26.6)
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 10.0.401
 
-      - name: Install workload iOS
-        run: dotnet workload install ios
+      - name: Install workload iOS (10.0.401 para Xcode 26.6)
+        run: dotnet workload install ios --version 10.0.401
 
       - name: Selecionar Xcode real (sem symlink) compatível com workload iOS
         run: |
