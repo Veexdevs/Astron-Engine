@@ -201,11 +201,48 @@ jobs:
       - name: Install workload iOS
         run: dotnet workload install ios
 
+      - name: Selecionar Xcode compatível com workload iOS
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          SDK_XML=$(find /usr/local/share/dotnet "$HOME/.dotnet" -name "SdkVersions.xml" 2>/dev/null | grep -i "iOS" | head -n 1 || true)
+          if [ -n "$SDK_XML" ]; then
+            REQ=$(sed -n 's/.*Xcode="\([0-9.]*\)".*/\1/p' "$SDK_XML" | head -n 1)
+            if [ -z "$REQ" ]; then
+              REQ=$(sed -n 's/.*<Xcode>\([0-9.]*\)<\/Xcode>.*/\1/p' "$SDK_XML" | head -n 1)
+            fi
+            echo "Workload SdkVersions.xml ($SDK_XML) solicita Xcode: $REQ"
+            if [ -n "$REQ" ] && ls -d "/Applications/Xcode_${REQ}"*.app >/dev/null 2>&1; then
+              MATCH=$(ls -d "/Applications/Xcode_${REQ}"*.app | sort -V | tail -n 1)
+              sudo xcode-select -s "$MATCH"
+            else
+              LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1 || true)
+              if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST"; fi
+            fi
+          fi
+          xcode-select -p
+          xcodebuild -version
+
       - name: Build iOS (.app arm64)
-        run: >
-          dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj
-          -c Release -f net10.0-ios -r ios-arm64
-          -p:EnableCodeSigning=false
+        run: |
+          set -o pipefail
+          dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj \
+            -c Release -f net10.0-ios -r ios-arm64 \
+            -p:EnableCodeSigning=false 2>&1 | tee ios_build.log || {
+              REQ_XC=$(sed -n 's/.*requires Xcode \([0-9.]*\).*/\1/p' ios_build.log | head -n 1)
+              if [ -n "$REQ_XC" ] && ls -d "/Applications/Xcode_${REQ_XC}"*.app >/dev/null 2>&1; then
+                MATCH=$(ls -d "/Applications/Xcode_${REQ_XC}"*.app | sort -V | tail -n 1)
+                echo "Re-selecionando Xcode exato exigido: $MATCH"
+                sudo xcode-select -s "$MATCH"
+                dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj \
+                  -c Release -f net10.0-ios -r ios-arm64 \
+                  -p:EnableCodeSigning=false
+              else
+                grep -iE "error" ios_build.log | head -n 15 | while IFS= read -r line; do
+                  echo "::error::$line"
+                done
+                exit 1
+              fi
+            }
 
       - name: Empacotar IPA (Payload/*.app)
         run: |
