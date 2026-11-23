@@ -1,4 +1,8 @@
 #include "EngineApp.hpp"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>

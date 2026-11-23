@@ -1,5 +1,7 @@
 #pragma once
 #include "Scene.hpp"
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <mutex>

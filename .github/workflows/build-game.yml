@@ -153,6 +153,8 @@ jobs:
         run: >
           dotnet publish games/AstronGame/Android/AstronGame.Android.csproj
           -c Release -f net8.0-android
+          -p:CheckEolWorkloads=false
+          -p:CheckEolTargetFramework=false
           -p:AndroidPackageFormat=apk
           -p:AndroidKeyStore=true
           -p:AndroidSigningKeyStore="${{ github.workspace }}/release.keystore"
@@ -205,6 +207,8 @@ jobs:
         run: >
           dotnet publish games/AstronGame/iOS/AstronGame.iOS.csproj
           -c Release -f net8.0-ios -r ios-arm64
+          -p:CheckEolWorkloads=false
+          -p:CheckEolTargetFramework=false
           -p:EnableCodeSigning=false
 
       - name: Empacotar IPA (Payload/*.app)

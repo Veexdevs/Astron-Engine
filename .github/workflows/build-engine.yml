@@ -35,7 +35,14 @@ jobs:
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Compilar AstronEngine + Testes Nativos
-        run: cmake --build build --parallel
+        run: |
+          set -o pipefail
+          cmake --build build --parallel 2>&1 | tee build.log || {
+            grep -E "error:|undefined reference" build.log | head -n 15 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          }
 
       - name: Executar Testes Nativos C++20 / C11
         run: ctest --test-dir build --output-on-failure

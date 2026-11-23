@@ -1,4 +1,6 @@
 #include "HttpClient.hpp"
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

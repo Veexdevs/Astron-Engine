@@ -3,6 +3,9 @@
 #include "../core_c/astron_platform.h"
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 namespace astron {

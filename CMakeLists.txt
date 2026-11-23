@@ -58,7 +58,7 @@ add_library(astron_imgui_backends STATIC
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 target_compile_definitions(astron_imgui_backends PUBLIC GLFW_INCLUDE_NONE)
-target_link_libraries(astron_imgui_backends PUBLIC astron_imgui glfw)
+target_link_libraries(astron_imgui_backends PUBLIC astron_imgui glfw ${CMAKE_DL_LIBS})
 
 # -------------------- C11 Core Library --------------------
 add_library(astron_core_c STATIC

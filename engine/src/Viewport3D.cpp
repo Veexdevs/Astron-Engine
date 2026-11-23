@@ -1,5 +1,8 @@
 #include "Viewport3D.hpp"
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <sstream>
 #include <vector>
