@@ -1,4 +1,5 @@
 #include "ProjectManager.hpp"
+#include "../core_c/astron_audio.h"
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -363,6 +364,24 @@ void ProjectManager::seedProjectFiles(const fs::path& dir, const std::string& pr
         if (ok && !sh.empty()) {
             writeTextFile(dir / "shaders" / "surface.glsl", sh);
         }
+    }
+
+    if (!fs::exists(dir / "main.lua", ec)) {
+        bool ok = false;
+        std::string lua = readTextFile(m_workspaceRoot / "engine" / "scripting_lua" / "astron_behaviors.lua", &ok);
+        if (ok && !lua.empty()) {
+            writeTextFile(dir / "main.lua", lua);
+        }
+    }
+
+    if (!fs::exists(dir / "sounds" / "jump.wav", ec)) {
+        AstronAudioParams ap{};
+        ap.preset = ASTRON_SFX_JUMP;
+        ap.sampleRate = 44100u;
+        ap.durationSec = 0.32f;
+        ap.baseFreqHz = 360.0f;
+        ap.volume = 0.75f;
+        astron_audio_write_wav((dir / "sounds" / "jump.wav").string().c_str(), &ap, nullptr, 0);
     }
 }
 

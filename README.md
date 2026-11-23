@@ -1,56 +1,65 @@
+![Astron Engine](assets/textures/astron-lockup.png)
+
 # 🪐 Astron Engine
 
-**Astron Engine** é uma engine nativa multi-linguagem para criação e compilação de jogos 2D/3D, construída **100% de forma nativa** em **C++20**, **C11**, **GLSL 3.30 Core** e **C# (.NET 8)** — **sem nenhuma versão HTML/Web**.
+**Engine nativa multi-linguagem 2D/3D construída em C++20 · C# · C11 · GLSL · HLSL · Rust · Lua · CMake**  
+*100% Nativa para Desktop e Mobile — zero HTML, zero CSS, zero JavaScript, sem versão Web.*
 
 ---
 
-## Arquitetura Multi-Linguagem
+## Arquitetura Nativa Multi-Linguagem
 
-| Camada | Linguagem | Diretório | Responsabilidade |
+| Subsistema | Linguagem | Diretório | Responsabilidade |
 | :--- | :--- | :--- | :--- |
-| **Core Matemático & Plataforma** | **C11** | `engine/core_c/` | Matrizes 4×4 (`AstronMat4`), vetores, projeção perspectiva/ortográfica, raycast 3D AABB (`astron_ray_intersect_aabb`), loader dinâmico OpenGL 3.3 Core (`astron_gl.c`) e telemetria nativa de memória/processo (`astron_platform.c`). |
-| **Editor Desktop, UI & Agente IA** | **C++20** | `engine/include/`, `engine/src/` | Aplicação desktop GLFW + OpenGL 3.3 + Dear ImGui, renderizador 3D PBR em Framebuffer (`Viewport3D`), gerenciador de projetos `res://` (`ProjectManager`), cliente HTTP nativo (`WinHTTP` / `libcurl`) e **Agente IA Autônomo** (`AIAgent`). |
-| **Shaders GPU** | **GLSL 3.30** | `shaders/` | Céu procedural + grade infinita anti-aliased (`sky_grid.*`), iluminação PBR/Blinn-Phong multi-material (`pbr_lit.*`), gizmos 3D RGB (`gizmo.*`) e compilação ao vivo no **Editor de Shader**. |
-| **Jogos & Runtime Multiplataforma** | **C# (.NET 8)** | `games/AstronGame/` | Jogos escritos em C# (`Astron.Engine` + `Astron.Game`) compilados nativamente para **Android (`.apk`)**, **iOS (`.ipa`)**, **Windows (`.exe`)** e **Linux (`x64`)**. |
+| **Editor Desktop, Renderer 3D & Agente IA** | **C++20** | `engine/include/`, `engine/src/` | Aplicação desktop nativa GLFW + OpenGL 3.3 Core + Dear ImGui, Viewport 3D PBR em Framebuffer (`Viewport3D`), gerenciador `res://` (`ProjectManager`), cliente HTTP nativo (`WinHTTP` / `libcurl`) e **Agente IA Autônomo** (`AIAgent`). |
+| **SDK de Jogos & Runtime Multiplataforma** | **C# (.NET)** | `games/AstronGame/` | SDK `Astron.Engine` (`AstronWorld3D`, `SceneNode3D`, `Vec3`, física AABB 2D/3D) e jogos compilados nativamente para **Android (`.apk`)**, **iOS (`.ipa`)**, **Windows (`.exe`)** e **Linux (`x64`)**. |
+| **Core Matemático, SIMD & Sintetizador DSP** | **C11** | `engine/core_c/` | Matrizes 4×4 (`astron_math.c`), aceleração por hardware **SSE2 / ARM64 NEON** (`astron_simd.c`), sintetizador de áudio PCM 16-bit `.wav` (`astron_audio.c`), loader dinâmico OpenGL (`astron_gl.c`) e telemetria de SO (`astron_platform.c`). |
+| **Shaders GPU OpenGL 3.3 Core** | **GLSL** | `shaders/*.{vert,frag,glsl}` | Céu procedural + grade anti-aliased (`sky_grid`), Cook-Torrance GGX PBR (`pbr_metallic`), holograma sci-fi (`hologram_cyber`), oceano Gerstner (`water_waves`), cel-shading (`toon_cel`) e pós-processamento ACES + Bloom (`post_aces_bloom`). |
+| **Shaders DirectX 11 / 12 (Windows)** | **HLSL** | `shaders/hlsl/*.hlsl` | Pipeline Direct3D Shader Model 5.0 PBR (`AstronStandardPBR.hlsl`) e simulação de partículas em Compute Shader (`AstronParticlesCS.hlsl`). |
+| **Empacotador Binário `.apak` & FFI** | **Rust** | `engine/tools/astron_pak_rs/` | Ferramenta nativa `astron-pak` e biblioteca estática FFI C para empacotamento, compressão RLE e verificação de integridade FNV-1a 64-bit de arquivos `.apak`. |
+| **Scripting Rápido de Comportamentos** | **Lua 5.4** | `engine/scripting_lua/` | Scripts reativos leves (`main.lua` / `astron_behaviors.lua`) para plataformas móveis, coletáveis e ciclos de iluminação. |
+| **Sistema de Build Nativo** | **CMake** | `CMakeLists.txt` | Orquestração de compilação C11 + C++20 multiplataforma (Linux GCC/Ninja e Windows MSVC x64) e suíte de testes `ctest`. |
 
 ---
 
-## Telas Nativas da Engine
+## Identidade Oficial & Telas Nativas
 
-1. **Splash Screen** — Fundo espacial escuro, logotipo planetário da **Astron Engine**, barra de carregamento nativa e transição automática.
-2. **Tela de Login** — Horizonte planetário, **Astron Engine** (`Crie. Desenvolva. Explore.`), formulário `Bem-vindo(a)!`, login GitHub e acesso às **Configurações** de API.
-3. **Hub Inicial (`Início`)** — Navegação lateral (`Início`, `Meus Projetos`, `Bibioteca`, `Loja`, `Configurações`, `Sobre`), banner `+ Novo Projeto` e cartões de `Projetos Recentes` (`Meu Jogo`, `Projeto RP`, `Obby Teste`).
-4. **Tela de Compilação (`Compilar`)** — Alvos exclusivamente nativos: **Gerar APK** (Android), **Gerar IPA** (iOS), **Gerar EXE** (Windows), **Build para Linux**, **Exportar ZIP** e **Outras Plataformas** (consoles/embarcados), com **Build Rápida** integrada ao GitHub Actions.
-5. **Editor 3D Completo (`Astron Engine`)** — Barra superior com a logo oficial da **Astron Engine** e menu **Astron Engine**, barra de ferramentas (`Selecionar`, `Mover`, `Rotacionar`, `Escalar`, `Transformar`, `Criar`, `Câmera`, `Iluminação`, `Terreno`, `Componente`, `2D/3D`, `Jogar`, `Pausar`, `Parar`), `Explorer`, árvore `res://` em `Arquivos`, Viewport 3D OpenGL interativo com gizmo RGB, editor de código C#, `Propriedades`, `Caixa de Ferramentas`, `Console`, `Editor de Shader` GLSL e **Agente IA**.
+1. **Splash Screen** — Fundo espacial escuro, logotipo planetário oficial da **Astron Engine** (`assets/textures/astron-lockup.png`), barra de progresso e transição automática.
+2. **Tela de Login** — Horizonte planetário, **Astron Engine** (`Crie. Desenvolva. Explore.`), cartão `Bem-vindo(a)!`, autenticação GitHub e **Configurações** de IA.
+3. **Hub Inicial (`Início`)** — Barra lateral com a logo horizontal oficial da **Astron Engine**, seções `Início`, `Meus Projetos`, `Bibioteca`, `Loja`, `Configurações` e `Sobre`, banner `+ Novo Projeto` e `Projetos Recentes` (`Meu Jogo`, `Projeto RP`, `Obby Teste`).
+4. **Tela de Compilação (`Compilar`)** — Exportação exclusivamente nativa: **APK** (Android), **IPA** (iOS), **EXE** (Windows), **Linux x64**, **ZIP** e **Outros** (macOS / C++), além de **Build Rápida**.
+5. **Editor 3D Completo (`Astron Engine`)** — Cabeçalho superior com o ícone planetário oficial da **Astron Engine** (`astron-icon.png`) e menu **`Astron Engine ▾`**, ferramentas 3D (`Selecionar`, `Mover`, `Rotacionar`, `Escalar`, `Transformar`, `Criar`, `Câmera`, `Iluminação`, `Terreno`, `Componente`, `2D/3D`, `Jogar`, `Pausar`, `Parar`), `Explorer`, `Arquivos (res://)`, Viewport 3D OpenGL com gizmo RGB, editor C#/Lua, `Propriedades`, `Caixa de Ferramentas`, `Console`, `Depurador` (SIMD/C11), sintetizador `Áudio` (`.wav` C11), `Editor de Shader` GLSL ao vivo e **Agente IA**.
 
 ---
 
 ## Agente IA Autônomo (Qualquer API até OpenRouter)
 
-O painel **Agente IA** (`Ctrl+I` no Editor) conecta-se diretamente via C++ (`WinHTTP` no Windows / `libcurl` no Linux) a qualquer provedor de IA até o **OpenRouter**:
+O painel **Agente IA** (`Ctrl+I` no Editor) conecta-se via C++ nativo (`WinHTTP` no Windows / `libcurl` no Linux) a qualquer provedor de IA até o **OpenRouter**:
 
 - **OpenRouter** (`https://openrouter.ai/api/v1` — Claude, GPT, Gemini, DeepSeek, Llama, Qwen, Mistral...)
-- **OpenAI**, **Anthropic (Claude)**, **Groq**, **Mistral**, **DeepSeek**, **Google Gemini** ou qualquer endpoint compatível (`Custom`).
-- **100% Autônomo**: ao pedir um jogo ou mecânica no chat, o Agente inspeciona o projeto (`list_files`, `read_file`), programa e grava os arquivos **C#** diretamente em `res://scripts/` e sincroniza automaticamente com `games/AstronGame/Core/` (`write_file`), além de posicionar objetos 3D na cena (`spawn_entity`) sem exigir nenhuma intervenção manual do usuário.
+- **OpenAI**, **Anthropic**, **Groq**, **Mistral**, **DeepSeek**, **Google Gemini** ou endpoint customizado.
+- **Execução 100% Autônoma**: o Agente lê a estrutura do projeto (`list_files`, `read_file`), escreve os scripts **C#** diretamente em `res://scripts/` sincronizados com `games/AstronGame/Core/` (`write_file`) e instancia entidades 3D na cena (`spawn_entity`) sozinho.
 
 ---
 
-## Compilando Localmente (CMake)
+## Compilando Localmente
 
-### Linux (Ubuntu / Debian)
+### Linux x64 (GCC + Ninja + Cargo)
 ```bash
 sudo apt-get install -y build-essential cmake ninja-build \
   libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
   libxcursor-dev libxi-dev libcurl4-openssl-dev
 
+cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ./build/AstronEngine
 ```
 
-### Windows (Visual Studio 2022 / MSVC x64)
+### Windows x64 (Visual Studio 2022 / MSVC + Cargo)
 ```powershell
+cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
 cmake -B build -A x64
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
@@ -61,5 +70,5 @@ ctest --test-dir build -C Release --output-on-failure
 
 ## Pipelines GitHub Actions
 
-- **`.github/workflows/build-engine.yml`** (`🪐 Build Astron Engine`) — Compila o binário nativo da **Astron Engine** em C++20/C11/GLSL para **Windows (`AstronEngine.exe`)** e **Linux (`AstronEngine`)** e executa a suíte nativa de testes (`ctest`).
-- **`.github/workflows/build-game.yml`** (`🎮 Build do Jogo`) — Compila os jogos em **C# (.NET 8)** gerando artefatos prontos para **Android (`.apk` assinado)**, **iOS (`.ipa`)**, **Windows (`.exe` single-file)** e **Linux (`.tar.gz`)**.
+- **`.github/workflows/build-engine.yml`** (`🪐 Build Astron Engine`) — Compila e testa o binário nativo **`AstronEngine`** (C++20 / C11 / GLSL) e o empacotador **`astron-pak`** (Rust) para **Windows x64 (`.exe`)** e **Linux x64**.
+- **`.github/workflows/build-game.yml`** (`🎮 Build do Jogo`) — Compila os jogos em **C#** gerando pacotes nativos para **Android (`.apk` assinado)**, **iOS (`.ipa`)**, **Windows (`.exe`)** e **Linux (`.tar.gz`)**.

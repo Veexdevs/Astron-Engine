@@ -67,14 +67,23 @@ void EngineApp::renderHome(float w, float h) {
     dl->AddRectFilled(ImVec2(0, 0), ImVec2(sideW, h), IM_COL32(6, 6, 8, 255));
     dl->AddLine(ImVec2(sideW, 0), ImVec2(sideW, h), IM_COL32(24, 25, 30, 255));
 
-    // Sidebar Brand: Astron Engine logo + wordmark
-    UIWidgets::DrawPlanetMark(dl, ImVec2(50.0f, 52.0f), 26.0f, IM_COL32(255, 255, 255, 255), IM_COL32(6, 6, 8, 255));
-    if (fontLogoMed) ImGui::PushFont(fontLogoMed);
-    dl->AddText(ImVec2(88.0f, 32.0f), IM_COL32(255, 255, 255, 255), "Astron");
-    if (fontLogoMed) ImGui::PopFont();
-    if (fontLogoSmall) ImGui::PushFont(fontLogoSmall);
-    dl->AddText(ImVec2(138.0f, 58.0f), IM_COL32(215, 216, 224, 255), "E n g i n e");
-    if (fontLogoSmall) ImGui::PopFont();
+    // Sidebar Brand: Official Astron Engine horizontal logo texture (with vector fallback)
+    GpuTexture horizLogo = m_textures.get("assets/textures/astron-horizontal.png");
+    if (horizLogo.id != 0) {
+        const float lw = 216.0f;
+        const float lh = lw * (static_cast<float>(horizLogo.height) / std::max(1, horizLogo.width));
+        dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(horizLogo.id)),
+                     ImVec2(22.0f, 26.0f),
+                     ImVec2(22.0f + lw, 26.0f + lh));
+    } else {
+        UIWidgets::DrawPlanetMark(dl, ImVec2(50.0f, 52.0f), 26.0f, IM_COL32(255, 255, 255, 255), IM_COL32(6, 6, 8, 255));
+        if (fontLogoMed) ImGui::PushFont(fontLogoMed);
+        dl->AddText(ImVec2(88.0f, 32.0f), IM_COL32(255, 255, 255, 255), "Astron");
+        if (fontLogoMed) ImGui::PopFont();
+        if (fontLogoSmall) ImGui::PushFont(fontLogoSmall);
+        dl->AddText(ImVec2(138.0f, 58.0f), IM_COL32(215, 216, 224, 255), "E n g i n e");
+        if (fontLogoSmall) ImGui::PopFont();
+    }
 
     // Sidebar Nav Items (matching exact Portuguese labels from mockup)
     ImGui::SetCursorScreenPos(ImVec2(14.0f, 114.0f));
@@ -276,12 +285,21 @@ void EngineApp::renderHome(float w, float h) {
     } else if (m_homePage == "sobre") {
         const float acx = mainX + mainW * 0.5f;
         const float acy = h * 0.44f;
-        UIWidgets::DrawPlanetMark(dl, ImVec2(acx, acy - 70.0f), 58.0f, IM_COL32(255, 255, 255, 255), IM_COL32(3, 3, 5, 255));
-        if (fontLogoBig) ImGui::PushFont(fontLogoBig);
-        ImVec2 sA = ImGui::CalcTextSize("Astron");
-        dl->AddText(ImVec2(acx - sA.x * 0.5f, acy + 8.0f), IM_COL32(255, 255, 255, 255), "Astron");
-        if (fontLogoBig) ImGui::PopFont();
-        const char* infoLine = "Engine nativa em C++20 · C11 · OpenGL 3.3 / GLSL · C# (.NET 8) · GitHub Actions";
+        GpuTexture aboutLockup = m_textures.get("assets/textures/astron-lockup.png");
+        if (aboutLockup.id != 0) {
+            const float lw = 290.0f;
+            const float lh = lw * (static_cast<float>(aboutLockup.height) / std::max(1, aboutLockup.width));
+            dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(aboutLockup.id)),
+                         ImVec2(acx - lw * 0.5f, acy - lh + 64.0f),
+                         ImVec2(acx + lw * 0.5f, acy + 64.0f));
+        } else {
+            UIWidgets::DrawPlanetMark(dl, ImVec2(acx, acy - 70.0f), 58.0f, IM_COL32(255, 255, 255, 255), IM_COL32(3, 3, 5, 255));
+            if (fontLogoBig) ImGui::PushFont(fontLogoBig);
+            ImVec2 sA = ImGui::CalcTextSize("Astron");
+            dl->AddText(ImVec2(acx - sA.x * 0.5f, acy + 8.0f), IM_COL32(255, 255, 255, 255), "Astron");
+            if (fontLogoBig) ImGui::PopFont();
+        }
+        const char* infoLine = "Engine 100% Nativa em C++20 · C# (.NET) · C11 · GLSL · HLSL · Rust · Lua";
         ImVec2 sI = ImGui::CalcTextSize(infoLine);
         dl->AddText(ImVec2(acx - sI.x * 0.5f, acy + 86.0f), IM_COL32(175, 178, 188, 255), infoLine);
     }
@@ -315,13 +333,22 @@ void EngineApp::renderBuild(float dt, float w, float h) {
     }
     dl->AddLine(ImVec2(sideW, 0), ImVec2(sideW, h), IM_COL32(24, 25, 30, 255));
 
-    UIWidgets::DrawPlanetMark(dl, ImVec2(48.0f, 50.0f), 24.0f, IM_COL32(255, 255, 255, 255), IM_COL32(6, 6, 8, 255));
-    if (fontLogoMed) ImGui::PushFont(fontLogoMed);
-    dl->AddText(ImVec2(84.0f, 31.0f), IM_COL32(255, 255, 255, 255), "Astron");
-    if (fontLogoMed) ImGui::PopFont();
-    if (fontLogoSmall) ImGui::PushFont(fontLogoSmall);
-    dl->AddText(ImVec2(134.0f, 56.0f), IM_COL32(215, 216, 224, 255), "E n g i n e");
-    if (fontLogoSmall) ImGui::PopFont();
+    GpuTexture buildHorizLogo = m_textures.get("assets/textures/astron-horizontal.png");
+    if (buildHorizLogo.id != 0) {
+        const float lw = 212.0f;
+        const float lh = lw * (static_cast<float>(buildHorizLogo.height) / std::max(1, buildHorizLogo.width));
+        dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(buildHorizLogo.id)),
+                     ImVec2(22.0f, 25.0f),
+                     ImVec2(22.0f + lw, 25.0f + lh));
+    } else {
+        UIWidgets::DrawPlanetMark(dl, ImVec2(48.0f, 50.0f), 24.0f, IM_COL32(255, 255, 255, 255), IM_COL32(6, 6, 8, 255));
+        if (fontLogoMed) ImGui::PushFont(fontLogoMed);
+        dl->AddText(ImVec2(84.0f, 31.0f), IM_COL32(255, 255, 255, 255), "Astron");
+        if (fontLogoMed) ImGui::PopFont();
+        if (fontLogoSmall) ImGui::PushFont(fontLogoSmall);
+        dl->AddText(ImVec2(134.0f, 56.0f), IM_COL32(215, 216, 224, 255), "E n g i n e");
+        if (fontLogoSmall) ImGui::PopFont();
+    }
 
     ImGui::SetCursorScreenPos(ImVec2(14.0f, 110.0f));
     ImGui::BeginGroup();
@@ -363,8 +390,16 @@ void EngineApp::renderBuild(float dt, float w, float h) {
                                 IM_COL32(0, 0, 0, 50), IM_COL32(0, 0, 0, 235));
     dl->AddRect(bMin, bMax, IM_COL32(34, 36, 44, 255), 18.0f);
 
-    UIWidgets::DrawPlanetMark(dl, ImVec2(bMin.x + 150.0f, bMin.y + banH * 0.5f), 54.0f,
-                              IM_COL32(255, 255, 255, 255), IM_COL32(6, 7, 10, 255));
+    GpuTexture markTex = m_textures.get("assets/textures/astron-mark.png");
+    if (markTex.id != 0) {
+        const float ms = 118.0f;
+        dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(markTex.id)),
+                     ImVec2(bMin.x + 92.0f, bMin.y + (banH - ms) * 0.5f),
+                     ImVec2(bMin.x + 92.0f + ms, bMin.y + (banH + ms) * 0.5f));
+    } else {
+        UIWidgets::DrawPlanetMark(dl, ImVec2(bMin.x + 150.0f, bMin.y + banH * 0.5f), 54.0f,
+                                  IM_COL32(255, 255, 255, 255), IM_COL32(6, 7, 10, 255));
+    }
     if (fontTitle) ImGui::PushFont(fontTitle);
     dl->AddText(ImVec2(bMin.x + 258.0f, bMin.y + 42.0f), IM_COL32(255, 255, 255, 255), "Astron Engine");
     if (fontTitle) ImGui::PopFont();

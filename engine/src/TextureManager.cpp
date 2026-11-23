@@ -54,4 +54,23 @@ void TextureManager::clear() {
     m_cache.clear();
 }
 
+bool TextureManager::loadRgbaPixels(
+    const std::filesystem::path& filePath,
+    std::vector<unsigned char>& outPixels,
+    int& outW,
+    int& outH
+) {
+    int w = 0, h = 0, comp = 0;
+    stbi_uc* raw = stbi_load(filePath.string().c_str(), &w, &h, &comp, 4);
+    if (!raw || w <= 0 || h <= 0) {
+        if (raw) stbi_image_free(raw);
+        return false;
+    }
+    outW = w;
+    outH = h;
+    outPixels.assign(raw, raw + static_cast<size_t>(w) * static_cast<size_t>(h) * 4u);
+    stbi_image_free(raw);
+    return true;
+}
+
 } // namespace astron

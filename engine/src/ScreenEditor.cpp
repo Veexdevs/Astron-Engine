@@ -1,12 +1,16 @@
 #include "EngineApp.hpp"
 #include "UIWidgets.hpp"
+#include "../core_c/astron_audio.h"
 #include "../core_c/astron_platform.h"
+#include "../core_c/astron_simd.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 
 namespace astron {
 
@@ -106,9 +110,16 @@ void EngineApp::renderEditor(float dt, float w, float h) {
     dl->AddRectFilled(ImVec2(0, 0), ImVec2(w, menuH), IM_COL32(12, 13, 16, 255));
     dl->AddLine(ImVec2(0, menuH), ImVec2(w, menuH), IM_COL32(28, 30, 36, 255));
 
-    // Official Astron Engine Saturn-ring planet logo (replacing old "N")
-    UIWidgets::DrawPlanetMark(dl, ImVec2(24.0f, menuH * 0.5f), 11.5f,
-                              IM_COL32(255, 255, 255, 255), IM_COL32(12, 13, 16, 255));
+    // Official Astron Engine Saturn-ring planet logo texture in Editor header bar
+    GpuTexture editorBrandIcon = m_textures.get("assets/textures/astron-icon.png");
+    if (editorBrandIcon.id != 0) {
+        dl->AddImage(static_cast<ImTextureID>(static_cast<uintptr_t>(editorBrandIcon.id)),
+                     ImVec2(10.0f, 4.0f),
+                     ImVec2(38.0f, 32.0f));
+    } else {
+        UIWidgets::DrawPlanetMark(dl, ImVec2(24.0f, menuH * 0.5f), 11.5f,
+                                  IM_COL32(255, 255, 255, 255), IM_COL32(12, 13, 16, 255));
+    }
 
     // "Astron Engine v" dropdown menu in the top-left header bar
     ImGui::SetCursorScreenPos(ImVec2(44.0f, 4.0f));
@@ -185,6 +196,7 @@ void EngineApp::renderEditor(float dt, float w, float h) {
                 if (ImGui::MenuItem("Abrir Agente IA Autônomo", "Ctrl+I")) { m_showBottom = true; m_bottomTab = 6; }
                 if (ImGui::MenuItem("Editar GameWorld.cs (C#)")) openFileTab("res://scripts/GameWorld.cs");
                 if (ImGui::MenuItem("Editar Player.cs (C#)")) openFileTab("res://scripts/Player.cs");
+                if (ImGui::MenuItem("Editar main.lua (Lua 5.4)")) openFileTab("res://main.lua");
                 if (ImGui::MenuItem("Novo Script C#")) {
                     std::string path = "res://scripts/NovoComponente.cs";
                     if (!m_projects.fileExists(path)) {
@@ -199,7 +211,7 @@ void EngineApp::renderEditor(float dt, float w, float h) {
             } else if (m == 8) { // Configurações
                 if (ImGui::MenuItem("Configurar API de IA (OpenRouter, OpenAI, Claude...)")) m_settingsOpen = true;
             } else if (m == 9) { // Ajuda
-                if (ImGui::MenuItem("Sobre a Astron Engine")) pushToast("Astron Engine v1.0.0 — C++20 / C11 / GLSL / C# (.NET 8)");
+                if (ImGui::MenuItem("Sobre a Astron Engine")) pushToast("Astron Engine v1.0.0 — C++20 / C# / C11 / GLSL / HLSL / Rust / Lua");
             }
             ImGui::EndPopup();
         }
@@ -422,13 +434,23 @@ void EngineApp::renderEditor(float dt, float w, float h) {
                     }
                 } else {
                     if (m_filesSearch[0] != '\0' && e.name.find(m_filesSearch) == std::string::npos) return;
+                    bool isWav = (e.name.find(".wav") != std::string::npos);
                     std::string icon = (e.name.find(".cs") != std::string::npos) ? "📄 " :
+                                       (e.name.find(".lua") != std::string::npos) ? "🌙 " :
+                                       isWav ? "🔊 " :
                                        (e.name.find(".scene") != std::string::npos) ? "🧊 " : "✨ ";
                     std::string lbl = icon + e.name + "##file_" + e.resPath;
                     bool sel = (m_activeTabIdx >= 0 && m_activeTabIdx < static_cast<int>(m_tabs.size()) &&
                                 m_tabs[static_cast<size_t>(m_activeTabIdx)].id == e.resPath);
                     if (ImGui::Selectable(lbl.c_str(), sel)) {
-                        openFileTab(e.resPath);
+                        if (isWav) {
+                            m_showBottom = true;
+                            m_bottomTab = 3;
+                            m_lastSynthWav = e.resPath;
+                            pushToast("Áudio WAV selecionado: " + e.name);
+                        } else {
+                            openFileTab(e.resPath);
+                        }
                     }
                 }
             };
@@ -622,11 +644,93 @@ void EngineApp::renderEditor(float dt, float w, float h) {
                 pushLog("INFO", std::string("> ") + m_consoleInput);
                 m_consoleInput[0] = '\0';
             }
+        } else if (m_bottomTab == 2) {
+            // 🐞 Depurador: Telemetria em tempo real C11 + Hardware SIMD + GPU + Subsystems
+            ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.98f, 1.f),
+                               "Telemetria Nativa Astron Engine — Subsistemas Compilados:");
+            ImGui::Spacing();
+            ImGui::Columns(3, "##dbg_cols", false);
+            ImGui::Text("Sistema: %s", astron_os_name());
+            ImGui::Text("Kernel SIMD C11: %s", astron_simd_backend_name());
+            ImGui::Text("Memória RAM: %u MB", astron_process_memory_mb());
+            ImGui::NextColumn();
+            ImGui::Text("Objetos 3D na Cena: %zu", m_scene.objects.size());
+            ImGui::Text("GPU: OpenGL 3.3 Core + GLSL 3.30");
+            ImGui::Text("Windows DX: HLSL Shader Model 5.0");
+            ImGui::NextColumn();
+            ImGui::Text("Runtime Jogo: C# (.NET / APK / IPA / EXE)");
+            ImGui::Text("Empacotador Binário: Rust (astron-pak .apak)");
+            ImGui::Text("Scripting Rápido: Lua 5.4 (main.lua)");
+            ImGui::Columns(1);
+        } else if (m_bottomTab == 3) {
+            // 🔊 Áudio: Sintetizador C11 nativo de efeitos sonoros PCM 16-bit .WAV
+            const char* sfxNames[] = {
+                "Pulo (Jump)", "Moeda (Coin)", "Laser Sci-Fi",
+                "Explosão", "Power-Up", "Ambiente Espacial"
+            };
+            ImGui::SetNextItemWidth(175.0f);
+            ImGui::Combo("Preset", &m_audioPreset, sfxNames, 6);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(130.0f);
+            ImGui::SliderFloat("Hz", &m_audioFreqHz, 90.0f, 1320.0f, "%.0f Hz");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(120.0f);
+            ImGui::SliderFloat("Duração", &m_audioDurationSec, 0.12f, 2.50f, "%.2f s");
+            ImGui::SameLine();
+            if (UIWidgets::WhitePillButton("Sintetizar .WAV (C11)", ImVec2(175.0f, 26.0f), 7.0f)) {
+                AstronAudioParams ap{};
+                ap.preset = static_cast<AstronSfxPreset>(m_audioPreset);
+                ap.sampleRate = 44100u;
+                ap.durationSec = m_audioDurationSec;
+                ap.baseFreqHz = m_audioFreqHz;
+                ap.volume = m_audioVolume;
+
+                std::string wavName = astron_audio_preset_name(ap.preset);
+                auto wavDiskPath = m_projects.currentProject().rootDir / "sounds" / wavName;
+                std::error_code ec;
+                std::filesystem::create_directories(wavDiskPath.parent_path(), ec);
+                if (astron_audio_write_wav(wavDiskPath.string().c_str(), &ap, m_audioPeaks, 48)) {
+                    m_lastSynthWav = "res://sounds/" + wavName;
+                    pushLog("INFO", "Áudio PCM 16-bit gerado em C11: " + m_lastSynthWav);
+                    pushToast("Gerado " + m_lastSynthWav + " ✓");
+                }
+            }
+
+            if (!m_lastSynthWav.empty()) {
+                ImGui::TextColored(ImVec4(0.45f, 0.88f, 0.56f, 1.f), "Arquivo ativo: %s (44.1 kHz · 16-bit PCM)", m_lastSynthWav.c_str());
+            }
+            ImGui::PlotHistogram("##wav_peaks", m_audioPeaks, 48, 0, nullptr, 0.0f, 1.0f, ImVec2(centerW - 24.0f, std::max(42.0f, bottomH - 102.0f)));
         } else if (m_bottomTab == 5) {
             // Real GLSL 3.30 Shader Editor compiled directly onto OpenGL GPU!
-            ImGui::TextColored(ImVec4(0.65f, 0.80f, 1.0f, 1.f), "Fragment Shader GLSL 3.30 Core (ao vivo na GPU):");
-            ImGui::SameLine(centerW - 320.0f);
-            if (UIWidgets::WhitePillButton("Compilar GLSL na GPU", ImVec2(175.0f, 25.0f), 7.0f)) {
+            auto loadPresetShader = [&](const char* relFile) {
+                std::ifstream sf(m_root / relFile, std::ios::binary);
+                if (sf) {
+                    std::ostringstream ss;
+                    ss << sf.rdbuf();
+                    m_shaderSource = ss.str();
+                    std::string logOut;
+                    if (m_viewport.compileCustomSurfaceShader(m_shaderSource, logOut)) {
+                        m_projects.writeFile("res://shaders/surface.glsl", m_shaderSource);
+                        pushLog("INFO", std::string("Preset GLSL carregado: ") + relFile);
+                        pushToast("Preset GLSL aplicado na GPU ✓");
+                    }
+                }
+            };
+
+            ImGui::TextColored(ImVec4(0.65f, 0.80f, 1.0f, 1.f), "Presets GLSL:");
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Neon"))      loadPresetShader("shaders/custom_surface.glsl");
+            ImGui::SameLine();
+            if (ImGui::SmallButton("PBR GGX"))   loadPresetShader("shaders/pbr_metallic.glsl");
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Holograma")) loadPresetShader("shaders/hologram_cyber.glsl");
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Oceano"))    loadPresetShader("shaders/water_waves.glsl");
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Toon"))      loadPresetShader("shaders/toon_cel.glsl");
+
+            ImGui::SameLine(centerW - 310.0f);
+            if (UIWidgets::WhitePillButton("Compilar GLSL na GPU", ImVec2(170.0f, 24.0f), 7.0f)) {
                 std::string logOut;
                 if (m_viewport.compileCustomSurfaceShader(m_shaderSource, logOut)) {
                     m_projects.writeFile("res://shaders/surface.glsl", m_shaderSource);
@@ -638,7 +742,7 @@ void EngineApp::renderEditor(float dt, float w, float h) {
                 }
             }
             ImGui::SameLine();
-            if (UIWidgets::OutlineButton("Padrão PBR", ImVec2(115.0f, 25.0f), 7.0f)) {
+            if (UIWidgets::OutlineButton("Padrão PBR", ImVec2(110.0f, 24.0f), 7.0f)) {
                 m_viewport.useDefaultSurfaceShader();
                 pushToast("Shader PBR padrão restaurado");
             }

@@ -65,6 +65,8 @@ add_library(astron_core_c STATIC
     engine/core_c/astron_math.c
     engine/core_c/astron_gl.c
     engine/core_c/astron_platform.c
+    engine/core_c/astron_audio.c
+    engine/core_c/astron_simd.c
 )
 target_include_directories(astron_core_c PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/engine

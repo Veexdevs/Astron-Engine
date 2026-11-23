@@ -52,6 +52,18 @@ uint32_t astron_process_memory_mb(void) {
 #endif
 }
 
+const char* astron_os_name(void) {
+#if defined(_WIN32)
+    return "Windows x64 (Win32 Native)";
+#elif defined(__APPLE__)
+    return "macOS / Apple Native";
+#elif defined(__linux__)
+    return "Linux x64 (ELF Native)";
+#else
+    return "POSIX Native";
+#endif
+}
+
 void astron_open_url(const char* url) {
     if (!url || strncmp(url, "https://", 8) != 0) return;
 #if defined(_WIN32)

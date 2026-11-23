@@ -1,0 +1,14 @@
+[package]
+name = "astron-pak"
+version = "1.0.0"
+edition = "2021"
+description = "Empacotador binário nativo (.apak) de recursos, cenas, scripts C# e shaders GLSL da Astron Engine"
+license = "MIT"
+
+[lib]
+name = "astron_pak"
+crate-type = ["rlib", "staticlib"]
+
+[[bin]]
+name = "astron-pak"
+path = "src/main.rs"

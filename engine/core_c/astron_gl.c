@@ -1,4 +1,5 @@
 #include "astron_gl.h"
+#include <string.h>
 
 void   (ASTRON_GL_APIENTRY *aglViewport)(GLint, GLint, GLsizei, GLsizei) = 0;
 void   (ASTRON_GL_APIENTRY *aglClearColor)(GLfloat, GLfloat, GLfloat, GLfloat) = 0;
@@ -67,7 +68,8 @@ void   (ASTRON_GL_APIENTRY *aglUniform4f)(GLint, GLfloat, GLfloat, GLfloat, GLfl
 void   (ASTRON_GL_APIENTRY *aglUniformMatrix4fv)(GLint, GLsizei, GLboolean, const GLfloat*) = 0;
 
 #define LOAD_GL(fn, sym) do { \
-    *(AstronGLProc*)(&(fn)) = loader(sym); \
+    AstronGLProc _p = loader(sym); \
+    memcpy(&(fn), &_p, sizeof(fn)); \
     if (!(fn)) ok = false; \
 } while (0)
 

@@ -63,6 +63,20 @@ int main(int argc, char** argv) {
     io.IniFilename = nullptr;
 
     std::filesystem::path root = locateWorkspaceRoot(argc > 0 ? argv[0] : nullptr);
+
+    // Define o ícone oficial da Astron Engine na barra de título / barra de tarefas do SO
+    {
+        std::vector<unsigned char> iconRgba;
+        int iconW = 0, iconH = 0;
+        if (astron::TextureManager::loadRgbaPixels(root / "assets/textures/astron-icon.png", iconRgba, iconW, iconH)) {
+            GLFWimage img{};
+            img.width = iconW;
+            img.height = iconH;
+            img.pixels = iconRgba.data();
+            glfwSetWindowIcon(window, 1, &img);
+        }
+    }
+
     astron::EngineApp app(root);
     app.applyDarkTheme();
     app.loadFonts();

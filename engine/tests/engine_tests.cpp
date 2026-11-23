@@ -1,9 +1,12 @@
 #include "../core_c/astron_math.h"
 #include "../core_c/astron_gl.h"
 #include "../core_c/astron_platform.h"
+#include "../core_c/astron_audio.h"
+#include "../core_c/astron_simd.h"
 #include "Json.hpp"
 #include "Scene.hpp"
 #include "ProjectManager.hpp"
+#include "TextureManager.hpp"
 #include "AIProviders.hpp"
 #include "AIAgent.hpp"
 #include "EngineApp.hpp"
@@ -59,6 +62,60 @@ void testC11Math() {
     char hexOut[8] = {};
     astron_rgba_to_hex(col, hexOut);
     assert(std::string(hexOut) == "#3882F6");
+
+    // Verify hardware SIMD matrix multiply & vertex transform match scalar C11
+    AstronMat4 simdVp = astron_simd_mat4_mul(proj, view);
+    for (int i = 0; i < 16; ++i) {
+        assert(std::fabs(simdVp.m[i] - vp.m[i]) < 1e-4f);
+    }
+    const float srcPts[6] = { 1.0f, 2.0f, 3.0f, -2.0f, 0.5f, 4.0f };
+    float outPts[6] = {};
+    AstronMat4 tr = astron_mat4_translate({ 10.0f, -5.0f, 2.0f });
+    astron_simd_transform_points(&tr, srcPts, outPts, 2);
+    assert(std::fabs(outPts[0] - 11.0f) < 1e-4f);
+    assert(std::fabs(outPts[1] - (-3.0f)) < 1e-4f);
+    assert(std::fabs(outPts[2] - 5.0f) < 1e-4f);
+    AstronAABB bnd = astron_simd_compute_bounds(outPts, 2);
+    assert(std::fabs(bnd.min.x - 8.0f) < 1e-4f);
+    assert(std::fabs(bnd.max.x - 11.0f) < 1e-4f);
+    assert(std::strlen(astron_simd_backend_name()) > 0);
+}
+
+void testC11AudioAndBrandLogos(const std::filesystem::path& repoRoot, const std::filesystem::path& tmpWs) {
+    std::printf("[TEST 2/6] C11 WAV Audio Synth & Official Astron Engine Logo Assets...\n");
+    AstronAudioParams ap{};
+    ap.preset = ASTRON_SFX_COIN;
+    ap.sampleRate = 44100u;
+    ap.durationSec = 0.25f;
+    ap.baseFreqHz = 523.25f;
+    ap.volume = 0.8f;
+
+    float peaks[32] = {};
+    auto wavPath = tmpWs / "test_coin.wav";
+    assert(astron_audio_write_wav(wavPath.string().c_str(), &ap, peaks, 32));
+    assert(std::filesystem::exists(wavPath));
+    assert(std::filesystem::file_size(wavPath) > 44);
+
+    // Check RIFF/WAVE magic bytes
+    std::ifstream wf(wavPath, std::ios::binary);
+    char magic[12] = {};
+    wf.read(magic, 12);
+    assert(std::memcmp(magic, "RIFF", 4) == 0);
+    assert(std::memcmp(magic + 8, "WAVE", 4) == 0);
+
+    // Verify official Astron Engine brand logos exist and decode cleanly
+    const char* logos[] = {
+        "assets/textures/astron-icon.png",
+        "assets/textures/astron-mark.png",
+        "assets/textures/astron-lockup.png",
+        "assets/textures/astron-horizontal.png"
+    };
+    for (const char* rel : logos) {
+        std::vector<unsigned char> px;
+        int w = 0, h = 0;
+        bool loaded = TextureManager::loadRgbaPixels(repoRoot / rel, px, w, h);
+        assert(loaded && w > 0 && h > 0 && px.size() == static_cast<size_t>(w * h * 4));
+    }
 }
 
 void testJsonAndScene() {
@@ -316,6 +373,7 @@ int main() {
     std::filesystem::create_directories(tmpWs, ec);
 
     testC11Math();
+    testC11AudioAndBrandLogos(repoRoot, tmpWs);
     testJsonAndScene();
     testProjectManagerSync(tmpWs);
 #ifndef _WIN32

@@ -159,6 +159,14 @@ private:
     int m_activeTabIdx = 0;
     std::string m_shaderSource;
 
+    // C11 Audio Synthesizer state (🔊 Áudio panel)
+    int   m_audioPreset = 0;
+    float m_audioFreqHz = 440.0f;
+    float m_audioDurationSec = 0.45f;
+    float m_audioVolume = 0.80f;
+    float m_audioPeaks[48] = {};
+    std::string m_lastSynthWav;
+
     std::vector<ConsoleEntry> m_logs;
     std::vector<ChatMessageUI> m_chatMsgs;
     std::vector<ToastItem> m_toasts;
