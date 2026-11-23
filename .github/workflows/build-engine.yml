@@ -32,15 +32,23 @@ jobs:
             libxinerama-dev libxcursor-dev libxi-dev \
             libcurl4-openssl-dev
 
+      - name: Instalar Toolchain Rust Estável
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Compilar & Testar Empacotador Binário Rust (astron-pak)
         run: |
-          if ! cargo --version >/dev/null 2>&1; then
-            rustup toolchain install stable --profile minimal --no-self-update
-            rustup default stable
-          fi
-          cargo --version
-          cargo test --manifest-path engine/tools/astron_pak_rs/Cargo.toml
-          cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+          set -o pipefail
+          {
+            rustc --version
+            cargo --version
+            cargo test --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+            cargo build --release --manifest-path engine/tools/astron_pak_rs/Cargo.toml
+          } 2>&1 | tee rust.log || {
+            tail -n 25 rust.log | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          }
 
       - name: Configurar CMake (Release)
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release

@@ -7,7 +7,6 @@ license = "MIT"
 
 [lib]
 name = "astron_pak"
-crate-type = ["rlib", "staticlib"]
 
 [[bin]]
 name = "astron-pak"
